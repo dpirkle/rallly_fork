@@ -175,7 +175,7 @@ const ManagePoll: React.FunctionComponent<{
               <DropdownMenuItem
                 disabled={!!poll.event}
                 onClick={() => {
-                  if (space.data.tier !== "pro") {
+                  if (space.data.tier === "pro") {
                     showPayWall();
                     posthog?.capture("trigger paywall", {
                       poll_id: poll.id,

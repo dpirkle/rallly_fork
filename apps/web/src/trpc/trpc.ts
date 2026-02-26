@@ -133,7 +133,7 @@ export const proProcedure = privateProcedure.use(async ({ next }) => {
 
   const data = await getCurrentUserSpace();
 
-  if (!data || data.space.tier !== "pro") {
+  if (!data || data.space.tier === "pro") {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message:

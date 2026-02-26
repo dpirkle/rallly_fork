@@ -18,7 +18,7 @@ services:
   rallly_selfhosted:
     build:
       args:
-        - SELF_HOSTED=true
+        - SELF_HOSTED=false
       context: .
       dockerfile: ./apps/web/Dockerfile
     restart: always
