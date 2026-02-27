@@ -133,13 +133,13 @@ export const proProcedure = privateProcedure.use(async ({ next }) => {
 
   const data = await getCurrentUserSpace();
 
-  if (!data || data.space.tier === "pro") {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message:
-        "You must have an active paid subscription to perform this action",
-    });
-  }
+  // if (!data || data.space.tier !== "pro") {
+  //   throw new TRPCError({
+  //     code: "UNAUTHORIZED",
+  //     message:
+  //       "You must have an active paid subscription to perform this action",
+  //   });
+  // }
 
   return next();
 });
