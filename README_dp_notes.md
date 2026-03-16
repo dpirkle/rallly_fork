@@ -2,7 +2,13 @@
 
 Start it with `pnpm dev`. If it complains about the version of node, use `nvm` to change it (for example, `nvm use 24`).
 
+You can change the version of Node to persist to future shell sessions by doing this: `nvm alias default 24`
+
 It picks up env variables from `.env.local` which has to be in the `apps/web` directory!
+
+## Debugging
+
+Use the `Launch via pnpm dev" option in vscode Run and Debug tab.
 
 ## Docker build for Railway:
 
