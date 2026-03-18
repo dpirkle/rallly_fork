@@ -135,6 +135,7 @@ const MonthCalendar: React.FunctionComponent<DateTimePickerProps> = ({
                   >
                     <button
                       type="button"
+                      disabled={day.isPast}
                       onClick={() => {
                         if (
                           datepicker.selection.some((selectedDate) =>

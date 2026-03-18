@@ -21,4 +21,5 @@ export interface DateTimePickerProps {
   duration: number;
   onChangeDuration: (duration: number) => void;
   scrollToTime?: Date;
+  isAvailableSlot: (localSlotTime: Date) => boolean;
 }

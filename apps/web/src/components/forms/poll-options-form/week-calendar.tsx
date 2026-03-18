@@ -31,6 +31,7 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
   onChange,
   duration = 60,
   onChangeDuration,
+  isAvailableSlot,
 }) => {
   const scrollToTime =
     options.length > 0
@@ -155,6 +156,9 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
           // on select slot
           const startDate = new Date(start);
           const endDate = new Date(end);
+          if (!isAvailableSlot(startDate)) {
+            return;
+          }
 
           const newEvent: DateTimeOption = {
             type: "timeSlot",

@@ -15,16 +15,18 @@ import { Label } from "@rallly/ui/label";
 import { Switch } from "@rallly/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@rallly/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rallly/ui/tooltip";
+import dayjs, { type ManipulateType } from "dayjs";
 import { CalendarIcon, GlobeIcon, InfoIcon, TableIcon } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { useFormContext } from "react-hook-form";
-
 import { TimeZoneCommand } from "@/components/time-zone-picker/time-zone-select";
 import { Trans } from "@/components/trans";
 import { useTranslation } from "@/i18n/client";
-
 import { getBrowserTimeZone } from "../../../utils/date-time-utils";
 import type { NewEventData } from "../types";
+import type { SlotsByDay } from "./available-slots";
+import { getAvailableSlots } from "./available-slots";
 import MonthCalendar from "./month-calendar";
 import type { DateTimeOption } from "./types";
 import WeekCalendar from "./week-calendar";
@@ -93,7 +95,39 @@ const PollOptionsForm = ({
   }, [watchOptions, dateOrTimeRangeDialog]);
 
   const watchNavigationDate = watch("navigationDate");
-  const navigationDate = new Date(watchNavigationDate ?? Date.now());
+  const navigationDate = React.useMemo(
+    () => new Date(watchNavigationDate ?? Date.now()),
+    [watchNavigationDate],
+  );
+
+  const searchParams = useSearchParams();
+  const [availableSlots, setAvailableSlots] = React.useState<SlotsByDay>({});
+  React.useEffect(() => {
+    const navDate = dayjs(navigationDate);
+    const startTime = navDate.subtract(1, "week");
+    const endTime = navDate.add(1, selectedView.value as ManipulateType);
+    const userName = searchParams.get("userName");
+    const eventTypeSlug = searchParams.get("eventTypeSlug");
+    if (userName && eventTypeSlug) {
+      const fetchAvailableSlots = async () => {
+        const slotsForRange = await getAvailableSlots(
+          startTime.toISOString(),
+          endTime.toISOString(),
+          userName,
+          eventTypeSlug,
+        );
+        setAvailableSlots(slotsForRange);
+      };
+      fetchAvailableSlots();
+    }
+  }, [navigationDate, selectedView.value, searchParams.get]);
+
+  const isAvailableSlot = (localSlotTime: Date) => {
+    const localDayjs = dayjs(localSlotTime);
+    const localDate = localDayjs.format("YYYY-MM-DD");
+    const utcDateAndTime = localDayjs.toISOString();
+    return availableSlots[localDate]?.has(utcDateAndTime);
+  };
 
   return (
     <Card>
@@ -201,6 +235,7 @@ const PollOptionsForm = ({
                 onChangeDuration={(duration) => {
                   setValue("duration", duration);
                 }}
+                isAvailableSlot={isAvailableSlot}
               />
               {formState.errors.options ? (
                 <div className="border-t p-3 text-center text-destructive">
