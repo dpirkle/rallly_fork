@@ -7,7 +7,6 @@ import type React from "react";
 import type { CalendarProps } from "react-big-calendar";
 import { Calendar } from "react-big-calendar";
 import { createBreakpoint } from "react-use";
-
 import { getDuration } from "../../../utils/date-time-utils";
 import DateNavigationToolbar from "./date-navigation-toolbar";
 import dayjsLocalizer from "./dayjs-localizer";
@@ -29,7 +28,7 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
   onNavigate,
   date,
   onChange,
-  duration = 60,
+  duration = 180,
   onChangeDuration,
   isAvailableSlot,
 }) => {
@@ -141,17 +140,19 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
           },
           timeSlotWrapper: function TimeSlotWrapper({
             children,
+            value,
           }: {
             children?: React.ReactNode;
+            value?: Date;
           }) {
-            return (
-              <div className="h-6 text-muted-foreground text-xs leading-none">
-                {children}
-              </div>
-            );
+            const offRange =
+              value && !isAvailableSlot(value) ? "rbc-off-range-bg " : "";
+            const clsStr = `${offRange}h-6 text-muted-foreground text-xs leading-none`;
+            return <div className={clsStr}>{children}</div>;
           },
         }}
-        step={15}
+        step={30}
+        onSelecting={() => false}
         onSelectSlot={({ start, end, action }) => {
           // on select slot
           const startDate = new Date(start);

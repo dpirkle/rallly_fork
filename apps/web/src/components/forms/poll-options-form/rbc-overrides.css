@@ -75,3 +75,9 @@
 .rbc-time-header-gutter {
   border-bottom: 1px solid var(--color-border-muted);
 }
+
+.rbc-off-range-bg {
+  background-color: #e0e0e0; /* Grey out the cell */
+  cursor: not-allowed; /* Change cursor on hover */
+  pointer-events: none; /* Prevent mouse events from working on the background div */
+}
