@@ -31,6 +31,10 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
   duration = 180,
   onChangeDuration,
   isAvailableSlot,
+  isWithinAvailableSlot,
+  min,
+  max,
+  step,
 }) => {
   const scrollToTime =
     options.length > 0
@@ -62,6 +66,8 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
         views={["week", "day"]}
         selectable={true}
         localizer={localizer}
+        min={min}
+        max={max}
         onSelectEvent={(event) => {
           onChange(
             options.filter(
@@ -146,12 +152,21 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
             value?: Date;
           }) {
             const offRange =
-              value && !isAvailableSlot(value) ? "rbc-off-range-bg " : "";
+              value && !isAvailableSlot(value)
+                ? isWithinAvailableSlot(value)
+                  ? "rbc-semi-off-range-bg "
+                  : "rbc-off-range-bg "
+                : "";
             const clsStr = `${offRange}h-6 text-muted-foreground text-xs leading-none`;
-            return <div className={clsStr}>{children}</div>;
+            return (
+              // TODO: height needs to be dynamic I think:
+              <div style={{ height: 28 }} className={clsStr}>
+                {children}
+              </div>
+            );
           },
         }}
-        step={30}
+        step={step ?? 30}
         onSelecting={() => false}
         onSelectSlot={({ start, end, action }) => {
           // on select slot

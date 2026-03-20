@@ -15,7 +15,7 @@ import { Label } from "@rallly/ui/label";
 import { Switch } from "@rallly/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@rallly/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rallly/ui/tooltip";
-import dayjs, { type ManipulateType } from "dayjs";
+import dayjs, { type Dayjs, type ManipulateType } from "dayjs";
 import { CalendarIcon, GlobeIcon, InfoIcon, TableIcon } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
@@ -37,6 +37,10 @@ export type PollOptionsData = {
   timeZone: string;
   view: string;
   options: DateTimeOption[];
+};
+
+type SlotDjssByDay = {
+  [day: string]: Dayjs[];
 };
 
 const PollOptionsForm = ({
@@ -74,7 +78,6 @@ const PollOptionsForm = ({
   );
 
   const watchOptions = watch("options", []);
-  const watchDuration = watch("duration");
   const watchTimeZone = watch("timeZone");
 
   const options = getValues("options");
@@ -101,11 +104,16 @@ const PollOptionsForm = ({
   );
 
   const searchParams = useSearchParams();
+  const duration = Number.parseInt(searchParams.get("duration") ?? "180", 10);
+  const step = Number.parseInt(searchParams.get("step") ?? "30", 10);
   const [availableSlots, setAvailableSlots] = React.useState<SlotsByDay>({});
+  const [availableDjss, setAvailableDjss] = React.useState<SlotDjssByDay>({});
+  const [minTime, setMinTime] = React.useState<Date>();
+  const [maxTime, setMaxTime] = React.useState<Date>();
   React.useEffect(() => {
     const navDate = dayjs(navigationDate);
-    const startTime = navDate.subtract(1, "week");
-    const endTime = navDate.add(1, selectedView.value as ManipulateType);
+    const startTime = navDate.subtract(2, "week");
+    const endTime = navDate.add(2, selectedView.value as ManipulateType);
     const userName = searchParams.get("userName");
     const eventTypeSlug = searchParams.get("eventTypeSlug");
     if (userName && eventTypeSlug) {
@@ -115,18 +123,37 @@ const PollOptionsForm = ({
           endTime.toISOString(),
           userName,
           eventTypeSlug,
+          duration,
         );
-        setAvailableSlots(slotsForRange);
+        setAvailableSlots(slotsForRange.slotsByDay);
+        const availableDateEntries = Object.entries(
+          slotsForRange.slotsByDay,
+        ).map(([day, slots]) => [day, [...slots].map((s) => dayjs(s))]);
+        setAvailableDjss(Object.fromEntries(availableDateEntries));
+        setMinTime(slotsForRange.minTime);
+        setMaxTime(slotsForRange.maxTime);
       };
       fetchAvailableSlots();
     }
-  }, [navigationDate, selectedView.value, searchParams.get]);
+  }, [navigationDate, selectedView.value, searchParams.get, duration]);
 
   const isAvailableSlot = (localSlotTime: Date) => {
     const localDayjs = dayjs(localSlotTime);
     const localDate = localDayjs.format("YYYY-MM-DD");
     const utcDateAndTime = localDayjs.toISOString();
     return availableSlots[localDate]?.has(utcDateAndTime);
+  };
+
+  const isWithinAvailableSlot = (localSlotTime: Date) => {
+    const localDayjs = dayjs(localSlotTime);
+    const localDate = localDayjs.format("YYYY-MM-DD");
+    const slots = availableDjss[localDate];
+    if (slots === undefined) {
+      return false;
+    }
+    return slots.some((slot) =>
+      localDayjs.isBetween(slot, slot.add(duration, "minute"), "minute", "[)"),
+    );
   };
 
   return (
@@ -231,11 +258,15 @@ const PollOptionsForm = ({
                 onChange={(options) => {
                   field.onChange(options);
                 }}
-                duration={watchDuration}
+                duration={duration}
                 onChangeDuration={(duration) => {
                   setValue("duration", duration);
                 }}
                 isAvailableSlot={isAvailableSlot}
+                isWithinAvailableSlot={isWithinAvailableSlot}
+                min={minTime}
+                max={maxTime}
+                step={step}
               />
               {formState.errors.options ? (
                 <div className="border-t p-3 text-center text-destructive">

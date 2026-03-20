@@ -81,3 +81,9 @@
   cursor: not-allowed; /* Change cursor on hover */
   pointer-events: none; /* Prevent mouse events from working on the background div */
 }
+
+.rbc-semi-off-range-bg {
+  background-color: #f6f6f6; /* Grey out the cell */
+  cursor: not-allowed; /* Change cursor on hover */
+  pointer-events: none; /* Prevent mouse events from working on the background div */
+}
