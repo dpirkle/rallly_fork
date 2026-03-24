@@ -57,7 +57,7 @@ export async function getAvailableSlots(
   };
 
   const inputComponent = encodeURIComponent(JSON.stringify(getScheduleInput));
-  const getScheduleUrl = `https://calcom-web-app-production-8a86.up.railway.app/api/trpc/slots/getSchedule?input=${inputComponent}`;
+  const getScheduleUrl = `${process.env.NEXT_PUBLIC_CALCOM_URL}/api/trpc/slots/getSchedule?input=${inputComponent}`;
   const res = await fetch(getScheduleUrl);
   const resJson: { result: { data: { json: { slots: SlotTimesByDay } } } } =
     await res.json();

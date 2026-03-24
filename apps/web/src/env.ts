@@ -146,6 +146,7 @@ export const env = createEnv({
     NEXT_PUBLIC_POSTHOG_API_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_API_HOST: z.url().optional(),
     NEXT_PUBLIC_SELF_HOSTED: z.enum(["true", "false"]).optional(),
+    NEXT_PUBLIC_CALCOM_URL: z.url(),
   },
   /*
    * Due to how Next.js bundles environment variables on Edge and Client,
@@ -213,6 +214,7 @@ export const env = createEnv({
     KV_REST_API_URL: process.env.KV_REST_API_URL,
     KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN,
     KV_URL: process.env.KV_URL,
+    NEXT_PUBLIC_CALCOM_URL: process.env.NEXT_PUBLIC_CALCOM_URL,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });
