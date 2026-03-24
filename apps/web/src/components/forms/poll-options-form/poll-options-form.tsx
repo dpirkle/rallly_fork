@@ -124,6 +124,8 @@ const PollOptionsForm = ({
           userName,
           eventTypeSlug,
           duration,
+          searchParams.get("minTime"),
+          searchParams.get("maxTime"),
         );
         setAvailableSlots(slotsForRange.slotsByDay);
         const availableDateEntries = Object.entries(

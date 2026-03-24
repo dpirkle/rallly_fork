@@ -24,6 +24,8 @@ export async function getAvailableSlots(
   userName: string,
   eventTypeSlug: string,
   duration: number,
+  minTimeParam: string | null,
+  maxTimeParam: string | null,
 ): Promise<AvailableSlotsInfo> {
   const getScheduleInput = {
     json: {
@@ -65,6 +67,8 @@ export async function getAvailableSlots(
   const [minTime, maxTime] = getMinMaxTimes(
     resJson.result.data.json.slots,
     duration,
+    minTimeParam,
+    maxTimeParam,
   );
   return {
     slotsByDay: Object.fromEntries(slotsByDay),
@@ -73,22 +77,36 @@ export async function getAvailableSlots(
   };
 }
 
-function getMinMaxTimes(slots: SlotTimesByDay, duration: number) {
+function getMinMaxTimes(
+  slots: SlotTimesByDay,
+  duration: number,
+  minTimeParam: string | null,
+  maxTimeParam: string | null,
+) {
+  if (minTimeParam && maxTimeParam) {
+    return getTimeRange(minTimeParam, maxTimeParam);
+  }
   const minTimes = Object.values(slots).map((times) =>
-    dayjs(times[0].time).format("HH:mm"),
+    times.at(0) ? dayjs(times.at(0)?.time).format("HH:mm") : null,
   );
   const maxTimes = Object.values(slots).map((times) =>
-    dayjs(times.at(-1)?.time).format("HH:mm"),
+    times.at(-1) ? dayjs(times.at(-1)?.time).format("HH:mm") : null,
   );
-  const minParts = minTimes.sort()[0].split(":");
-  const maxParts = maxTimes.sort().at(-1)?.split(":");
+  const minHm = minTimes.reduce((a, b) => (b === null || (a && a < b) ? a : b));
+  const maxHm = maxTimes.reduce((a, b) => (b === null || (a && a > b) ? a : b));
+  return getTimeRange(minHm ?? "12:00", maxHm ?? "18:00", duration);
+}
+
+function getTimeRange(minHm: string, maxHm: string, addToMax?: number) {
   const anyDate = dayjs("2026-03-21T00:00:00.000Z");
+  const minParts = minHm.split(":");
   const minTime = anyDate
     .set("h", Number.parseInt(minParts[0], 10))
-    .set("m", Number.parseInt(minParts[1], 10));
+    .set("m", Number.parseInt(minParts.at(1) ?? "00", 10));
+  const maxParts = maxHm.split(":");
   const maxTime = anyDate
-    .set("h", Number.parseInt(maxParts ? maxParts[0] : "9", 10))
-    .set("m", Number.parseInt(maxParts ? maxParts[1] : "5", 10))
-    .add(duration, "minute");
+    .set("h", Number.parseInt(maxParts[0], 10))
+    .set("m", Number.parseInt(maxParts.at(1) ?? "00", 10))
+    .add(addToMax ?? 0, "minute");
   return [minTime.toDate(), maxTime.toDate()];
 }
