@@ -81,7 +81,7 @@ const PollOptionsForm = ({ children }: React.PropsWithChildren) => {
 
   const watchNavigationDate = watch("navigationDate");
   const navigationDate = React.useMemo(
-    () => new Date(watchNavigationDate ?? Date.now()),
+    () => new Date(watchNavigationDate ?? dayjs().add(2, "day").toDate()),
     [watchNavigationDate],
   );
 
@@ -145,9 +145,6 @@ const PollOptionsForm = ({ children }: React.PropsWithChildren) => {
       <CardHeader>
         <div className="flex flex-col justify-between gap-4 sm:flex-row">
           <div>
-            <CardTitle>
-              <Trans i18nKey="calendar">Calendar</Trans>
-            </CardTitle>
             <CardDescription>
               <Trans
                 i18nKey="selectPotentialDates"

@@ -4,7 +4,7 @@ import "./rbc-overrides.css";
 import dayjs from "dayjs";
 import { XIcon } from "lucide-react";
 import type React from "react";
-import type { CalendarProps } from "react-big-calendar";
+import type { CalendarProps, SlotInfo } from "react-big-calendar";
 import { Calendar } from "react-big-calendar";
 import { createBreakpoint } from "react-use";
 import { getDuration } from "../../../utils/date-time-utils";
@@ -44,6 +44,45 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
       : undefined;
 
   const defaultView = useDevice() === "mobile" ? "day" : "week";
+  const isMobile = useDevice() === "mobile";
+
+  const handleOnSelectSlot = ({ start, end, action }: SlotInfo) => {
+    // on select slot
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    if (!isAvailableSlot(startDate)) {
+      return;
+    }
+
+    const newEvent: DateTimeOption = {
+      type: "timeSlot",
+      start: formatDateWithoutTz(startDate),
+      duration: dayjs(endDate).diff(endDate, "minutes"),
+      end: formatDateWithoutTz(endDate),
+    };
+
+    if (action === "select") {
+      const diff = dayjs(endDate).diff(startDate, "minutes");
+      if (diff < 60 * 24) {
+        onChangeDuration(diff);
+      }
+    } else {
+      newEvent.end = formatDateWithoutTz(
+        dayjs(startDate).add(duration, "minutes").toDate(),
+      );
+    }
+
+    const alreadyExists = options.some(
+      (option) =>
+        option.type === "timeSlot" &&
+        option.start === newEvent.start &&
+        option.end === newEvent.end,
+    );
+
+    if (!alreadyExists) {
+      onChange([...options, newEvent]);
+    }
+  };
 
   return (
     <div className="relative flex h-[600px]">
@@ -167,44 +206,17 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
           },
         }}
         step={step ?? 30}
-        onSelecting={() => false}
-        onSelectSlot={({ start, end, action }) => {
-          // on select slot
-          const startDate = new Date(start);
-          const endDate = new Date(end);
-          if (!isAvailableSlot(startDate)) {
-            return;
+        onSelecting={(range) => {
+          if (isMobile) {
+            handleOnSelectSlot({
+              ...range,
+              action: "click",
+              slots: [new Date()],
+            });
           }
-
-          const newEvent: DateTimeOption = {
-            type: "timeSlot",
-            start: formatDateWithoutTz(startDate),
-            duration: dayjs(endDate).diff(endDate, "minutes"),
-            end: formatDateWithoutTz(endDate),
-          };
-
-          if (action === "select") {
-            const diff = dayjs(endDate).diff(startDate, "minutes");
-            if (diff < 60 * 24) {
-              onChangeDuration(diff);
-            }
-          } else {
-            newEvent.end = formatDateWithoutTz(
-              dayjs(startDate).add(duration, "minutes").toDate(),
-            );
-          }
-
-          const alreadyExists = options.some(
-            (option) =>
-              option.type === "timeSlot" &&
-              option.start === newEvent.start &&
-              option.end === newEvent.end,
-          );
-
-          if (!alreadyExists) {
-            onChange([...options, newEvent]);
-          }
+          return false;
         }}
+        onSelectSlot={handleOnSelectSlot}
         scrollToTime={scrollToTime}
       />
     </div>
