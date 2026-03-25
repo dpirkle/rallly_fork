@@ -1,25 +1,17 @@
 "use client";
 import { Button } from "@rallly/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@rallly/ui/card";
 import { Form } from "@rallly/ui/form";
 import { toast } from "@rallly/ui/sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
 import { useForm } from "react-hook-form";
 import useFormPersist from "react-hook-form-persist";
 import { useUnmount } from "react-use";
-import { PollSettingsForm } from "@/components/forms/poll-settings";
 import { Trans } from "@/components/trans";
 import { useUser } from "@/components/user-provider";
 import { trpc } from "@/trpc/client";
 import type { NewEventData } from "./forms";
-import { PollDetailsForm, PollOptionsForm } from "./forms";
+import { PollOptionsForm } from "./forms";
 
 const required = <T,>(v: T | undefined): T => {
   if (!v) {
@@ -38,13 +30,14 @@ export interface CreatePollPageProps {
 
 export const CreatePoll: React.FunctionComponent = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { createGuestIfNeeded } = useUser();
   const form = useForm<NewEventData>({
     defaultValues: {
       title: "",
       description: "",
       location: "",
-      view: "month",
+      view: "week",
       options: [],
       hideScores: false,
       hideParticipants: false,
@@ -73,7 +66,7 @@ export const CreatePoll: React.FunctionComponent = () => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(async (formData) => {
-          const title = required(formData?.title.trim());
+          const title = required(searchParams.get("title") ?? "");
           await createGuestIfNeeded();
           await createPoll.mutateAsync(
             {
@@ -99,27 +92,7 @@ export const CreatePoll: React.FunctionComponent = () => {
         })}
       >
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                <Trans i18nKey="event" defaults="Event" />
-              </CardTitle>
-              <CardDescription>
-                <Trans
-                  i18nKey="describeYourEvent"
-                  defaults="Describe what your event is about"
-                />
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <PollDetailsForm />
-            </CardContent>
-          </Card>
-
           <PollOptionsForm />
-
-          <PollSettingsForm />
-          <hr />
           <Button
             loading={form.formState.isSubmitting || createPoll.isSuccess}
             size="lg"

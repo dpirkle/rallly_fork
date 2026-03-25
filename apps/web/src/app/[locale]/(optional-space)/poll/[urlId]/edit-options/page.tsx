@@ -56,7 +56,7 @@ const Page = () => {
   const form = useForm({
     defaultValues: {
       navigationDate: firstDate.format("YYYY-MM-DD"),
-      view: "month" as const,
+      view: "week" as const,
       options: poll.options.map((option) => {
         let start = dayjs(option.startTime);
         if (poll.timeZone) {
@@ -140,7 +140,7 @@ const Page = () => {
           }
         })}
       >
-        <PollOptionsForm disableTimeZoneChange={true}>
+        <PollOptionsForm>
           <CardFooter className="justify-between">
             <Button asChild>
               <Link href={pollLink}>

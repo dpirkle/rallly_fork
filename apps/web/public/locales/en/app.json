@@ -122,7 +122,7 @@
   "event": "Event",
   "describeYourEvent": "Describe what your event is about",
   "calendar": "Calendar",
-  "selectPotentialDates": "Select potential dates or times for your event",
+  "selectPotentialDates": "Click on the calendar to select potential times for your {title} adventure",
   "optionalLabel": "(Optional)",
   "calendarHelp": "You can't create a poll without any options. Add at least one option to continue.",
   "editSettings": "Edit settings",
