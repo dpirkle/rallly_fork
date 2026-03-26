@@ -87,3 +87,14 @@
   cursor: not-allowed; /* Change cursor on hover */
   pointer-events: none; /* Prevent mouse events from working on the background div */
 }
+
+/* Removes the current day coloring in day/week views (the column background) */
+.rbc-now {
+  background-color: transparent;
+}
+
+/* Optional: Removes the red line indicating the current time in day/week views */
+.rbc-current-time-indicator {
+  display: none; /* Hides the time indicator line */
+  /* Or change its color: background-color: initial; */
+}
