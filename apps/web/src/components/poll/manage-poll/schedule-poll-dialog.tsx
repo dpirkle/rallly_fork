@@ -20,7 +20,7 @@ import {
 } from "@rallly/ui/form";
 import { RadioGroup, RadioGroupItem } from "@rallly/ui/radio-group";
 import dayjs from "dayjs";
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -77,42 +77,29 @@ function DateIcon({ start }: { start: Date }) {
   return <DateIconInner dow={d.format("ddd")} day={d.format("D")} />;
 }
 
+type Options = {
+  votes: OptionScore;
+  id: string;
+  startTime: Date;
+  duration: number;
+}[];
+
 export const SchedulePollForm = ({
   name,
   onSubmit,
+  onSelect,
+  options,
 }: {
   name: string;
   onSubmit?: (data: ScheduleFormData) => void;
+  onSelect: (selectedDate: Date) => void;
+  options: Options;
 }) => {
   const poll = usePoll();
 
   const { adjustTimeZone } = useDayjs();
   const scoreByOptionId = useScoreByOptionId();
   const { participants } = useParticipants();
-
-  const options = [...poll.options]
-    .sort((a, b) => {
-      const aYes = scoreByOptionId[a.id].yes.length;
-      const bYes = scoreByOptionId[b.id].yes.length;
-      const aIfNeedBe = scoreByOptionId[a.id].ifNeedBe.length;
-      const bIfNeedBe = scoreByOptionId[b.id].ifNeedBe.length;
-
-      const aTotal = aYes + aIfNeedBe;
-      const bTotal = bYes + bIfNeedBe;
-
-      if (aTotal !== bTotal) {
-        return bTotal - aTotal;
-      }
-
-      if (aYes !== bYes) {
-        return bYes - aYes;
-      }
-
-      return bIfNeedBe - aIfNeedBe;
-    })
-    .map((option) => {
-      return { ...option, votes: scoreByOptionId[option.id] };
-    });
 
   const form = useForm({
     defaultValues: {
@@ -166,7 +153,11 @@ export const SchedulePollForm = ({
                             field.value === option.id ? "" : "",
                           )}
                         >
-                          <RadioGroupItem id={option.id} value={option.id} />
+                          <RadioGroupItem
+                            id={option.id}
+                            value={option.id}
+                            onClick={() => onSelect(option.startTime)}
+                          />
                           <div className="grow">
                             <div className="flex gap-x-4">
                               <DateIcon start={option.startTime} />
@@ -214,6 +205,37 @@ export const SchedulePollForm = ({
 
 export function SchedulePollDialog(props: DialogProps) {
   const poll = usePoll();
+  const scoreByOptionId = useScoreByOptionId();
+  const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
+  const [sortedOptions, setSortedOptions] = React.useState<Options>([]);
+  useEffect(() => {
+    const options = [...poll.options]
+      .sort((a, b) => {
+        const aYes = scoreByOptionId[a.id].yes.length;
+        const bYes = scoreByOptionId[b.id].yes.length;
+        const aIfNeedBe = scoreByOptionId[a.id].ifNeedBe.length;
+        const bIfNeedBe = scoreByOptionId[b.id].ifNeedBe.length;
+
+        const aTotal = aYes + aIfNeedBe;
+        const bTotal = bYes + bIfNeedBe;
+
+        if (aTotal !== bTotal) {
+          return bTotal - aTotal;
+        }
+
+        if (aYes !== bYes) {
+          return bYes - aYes;
+        }
+
+        return bIfNeedBe - aIfNeedBe;
+      })
+      .map((option) => {
+        return { ...option, votes: scoreByOptionId[option.id] };
+      });
+    setSelectedDate(options[0].startTime);
+    setSortedOptions(options);
+  }, [poll, scoreByOptionId]);
+
   const scheduleEvent = trpc.polls.book.useMutation();
   return (
     <Dialog {...props}>
@@ -239,6 +261,8 @@ export function SchedulePollDialog(props: DialogProps) {
             });
             props.onOpenChange?.(false);
           }}
+          onSelect={(date) => setSelectedDate(date)}
+          options={sortedOptions}
         />
         <DialogFooter>
           <DialogClose asChild>
@@ -248,8 +272,14 @@ export function SchedulePollDialog(props: DialogProps) {
           </DialogClose>
           <Button
             loading={scheduleEvent.isPending}
-            type="submit"
-            form="schedule-form"
+            onClick={() => {
+              if (selectedDate && poll.description) {
+                const eventInfo = JSON.parse(poll.description);
+                const isoDate = selectedDate.toISOString();
+                const plainDate = isoDate.split("T")[0];
+                window.location.href = `${process.env.NEXT_PUBLIC_CALCOM_URL}/${eventInfo.userName}/${eventInfo.eventTypeSlug}?date=${plainDate}&slot=${isoDate}`;
+              }
+            }}
             variant="primary"
           >
             <Trans i18nKey="schedulePoll" defaults="Schedule" />

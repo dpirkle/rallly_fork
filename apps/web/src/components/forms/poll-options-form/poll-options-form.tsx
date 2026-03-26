@@ -121,22 +121,22 @@ const PollOptionsForm = ({ children }: React.PropsWithChildren) => {
     }
   }, [navigationDate, selectedView.value, searchParams.get, duration]);
 
-  const isAvailableSlot = (localSlotTime: Date) => {
-    const localDayjs = dayjs(localSlotTime);
-    const localDate = localDayjs.format("YYYY-MM-DD");
-    const utcDateAndTime = localDayjs.toISOString();
-    return availableSlots[localDate]?.has(utcDateAndTime);
+  const isAvailableSlot = (slotTime: Date) => {
+    const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
+    const laDate = laDayjs.format("YYYY-MM-DD");
+    const utcDateAndTime = laDayjs.toISOString();
+    return availableSlots[laDate]?.has(utcDateAndTime);
   };
 
-  const isWithinAvailableSlot = (localSlotTime: Date) => {
-    const localDayjs = dayjs(localSlotTime);
-    const localDate = localDayjs.format("YYYY-MM-DD");
-    const slots = availableDjss[localDate];
+  const isWithinAvailableSlot = (slotTime: Date) => {
+    const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
+    const laDate = laDayjs.format("YYYY-MM-DD");
+    const slots = availableDjss[laDate];
     if (slots === undefined) {
       return false;
     }
     return slots.some((slot) =>
-      localDayjs.isBetween(slot, slot.add(duration, "minute"), "minute", "[)"),
+      laDayjs.isBetween(slot, slot.add(duration, "minute"), "minute", "[)"),
     );
   };
 

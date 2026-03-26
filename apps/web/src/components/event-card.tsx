@@ -73,11 +73,6 @@ export function EventCard() {
               <PollStatusBadge status={poll.status} />
             ) : null}
           </div>
-          {poll.description ? (
-            <p className="min-w-0 whitespace-pre-wrap text-pretty text-sm leading-relaxed">
-              <TruncatedLinkify>{poll.description}</TruncatedLinkify>
-            </p>
-          ) : null}
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:flex-wrap sm:items-center">
             <IconGuide />
             {poll.location ? (

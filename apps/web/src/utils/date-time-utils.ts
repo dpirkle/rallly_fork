@@ -19,8 +19,7 @@ export function parseIanaTimezone(timezone: string): {
 }
 
 export function getBrowserTimeZone() {
-  const timeZone = dayjs.tz.guess();
-  return normalizeTimeZone(timeZone);
+  return "America/Los_Angeles";
 }
 
 function getTimeZoneOffset(timeZone: string) {
