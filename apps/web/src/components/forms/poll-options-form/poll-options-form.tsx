@@ -81,7 +81,7 @@ const PollOptionsForm = ({ children }: React.PropsWithChildren) => {
 
   const watchNavigationDate = watch("navigationDate");
   const navigationDate = React.useMemo(
-    () => new Date(watchNavigationDate ?? dayjs().add(2, "day").toDate()),
+    () => new Date(watchNavigationDate ?? dayjs().add(4, "day").toDate()),
     [watchNavigationDate],
   );
 
