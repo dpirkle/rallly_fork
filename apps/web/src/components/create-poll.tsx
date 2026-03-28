@@ -11,7 +11,7 @@ import { Trans } from "@/components/trans";
 import { useUser } from "@/components/user-provider";
 import { trpc } from "@/trpc/client";
 import type { NewEventData } from "./forms";
-import { PollOptionsForm } from "./forms";
+import { PollOptionsForm, searchToCalcomParams } from "./forms";
 
 const required = <T,>(v: T | undefined): T => {
   if (!v) {
@@ -72,9 +72,7 @@ export const CreatePoll: React.FunctionComponent = () => {
             {
               title: title,
               location: formData?.location?.trim(),
-              description: JSON.stringify(
-                Object.fromEntries(searchParams.entries()),
-              ),
+              description: JSON.stringify(searchToCalcomParams(searchParams)),
               timeZone: "America/Los_Angeles",
               hideParticipants: formData?.hideParticipants,
               disableComments: formData?.disableComments,

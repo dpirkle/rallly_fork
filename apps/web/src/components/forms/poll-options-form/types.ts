@@ -36,4 +36,5 @@ export type CalcomParams = {
   duration: string;
   title: string;
   step: string;
+  minNotice: string;
 };

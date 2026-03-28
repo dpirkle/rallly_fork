@@ -9,7 +9,7 @@ import {
   useDialog,
 } from "@rallly/ui/dialog";
 import { FormField, FormMessage } from "@rallly/ui/form";
-import dayjs, { type Dayjs, type ManipulateType } from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
@@ -22,8 +22,10 @@ import type { NewEventData } from "../types";
 import type { SlotsByDay } from "./available-slots";
 import { getAvailableSlots } from "./available-slots";
 import MonthCalendar from "./month-calendar";
-import type { CalcomParams, DateTimeOption } from "./types";
+import type { CalcomParams, DateTimeOption, TimeOption } from "./types";
 import WeekCalendar from "./week-calendar";
+
+const MIN_POLL_HOURS = 2 * 24;
 
 export type PollOptionsData = {
   navigationDate: string; // used to navigate to the right part of the calendar
@@ -37,7 +39,7 @@ type SlotDjssByDay = {
   [day: string]: Dayjs[];
 };
 
-function searchToCalcomParams(
+export function searchToCalcomParams(
   searchParams: ReadonlyURLSearchParams,
 ): CalcomParams {
   return {
@@ -48,6 +50,7 @@ function searchToCalcomParams(
     duration: searchParams.get("duration") ?? "180",
     title: searchParams.get("title") ?? "Odyssey Tabletop",
     step: searchParams.get("step") ?? "30",
+    minNotice: searchParams.get("minNotice") ?? "48",
   };
 }
 
@@ -102,12 +105,6 @@ const PollOptionsForm = ({
     }
   }, [watchOptions, dateOrTimeRangeDialog]);
 
-  const watchNavigationDate = watch("navigationDate");
-  const navigationDate = React.useMemo(
-    () => new Date(watchNavigationDate ?? dayjs().add(4, "day").toDate()),
-    [watchNavigationDate],
-  );
-
   const searchParams = useSearchParams();
   const ccParams = React.useMemo(() => {
     if (poll?.description) {
@@ -122,10 +119,11 @@ const PollOptionsForm = ({
   const [availableDjss, setAvailableDjss] = React.useState<SlotDjssByDay>({});
   const [minTime, setMinTime] = React.useState<Date>();
   const [maxTime, setMaxTime] = React.useState<Date>();
+  const [earliestGoodSlot, setEarliestGoodSlot] = React.useState<Date>();
+  const [isTooSoon, setTooSoon] = React.useState(false);
   React.useEffect(() => {
-    const navDate = dayjs(navigationDate);
-    const startTime = navDate.subtract(2, selectedView.value as ManipulateType);
-    const endTime = navDate.add(2, selectedView.value as ManipulateType);
+    const startTime = dayjs();
+    const endTime = startTime.add(3, "month");
     if (ccParams.userName && ccParams.eventTypeSlug) {
       const fetchAvailableSlots = async () => {
         const slotsForRange = await getAvailableSlots(
@@ -136,6 +134,7 @@ const PollOptionsForm = ({
           duration,
           ccParams.minTime,
           ccParams.maxTime,
+          Number.parseInt(ccParams.minNotice, 10) + MIN_POLL_HOURS,
         );
         setAvailableSlots(slotsForRange.slotsByDay);
         const availableDateEntries = Object.entries(
@@ -144,10 +143,17 @@ const PollOptionsForm = ({
         setAvailableDjss(Object.fromEntries(availableDateEntries));
         setMinTime(slotsForRange.minTime);
         setMaxTime(slotsForRange.maxTime);
+        setEarliestGoodSlot(slotsForRange.earliestGoodSlot);
       };
       fetchAvailableSlots();
     }
-  }, [navigationDate, selectedView.value, ccParams, duration]);
+  }, [ccParams, duration]);
+
+  const watchNavigationDate = watch("navigationDate");
+  const navigationDate = React.useMemo(
+    () => new Date(watchNavigationDate ?? earliestGoodSlot),
+    [watchNavigationDate, earliestGoodSlot],
+  );
 
   const isAvailableSlot = (slotTime: Date) => {
     const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
@@ -167,6 +173,17 @@ const PollOptionsForm = ({
       laDayjs.isBetween(slot, slot.add(duration, "minute"), "minute", "[)"),
     );
   };
+
+  React.useEffect(() => {
+    if (earliestGoodSlot) {
+      const tooSoon = watchOptions.some((opt) => {
+        const start = (opt as TimeOption).start;
+        const laDayjs = dayjs(start).tz("America/Los_Angeles", true);
+        return laDayjs.isBefore(earliestGoodSlot);
+      });
+      setTooSoon(tooSoon);
+    }
+  }, [watchOptions, earliestGoodSlot]);
 
   return (
     <Card>
@@ -266,6 +283,14 @@ const PollOptionsForm = ({
               {formState.errors.options ? (
                 <div className="border-t p-3 text-center text-destructive">
                   <FormMessage />
+                </div>
+              ) : null}
+              {isTooSoon && earliestGoodSlot ? (
+                <div className="border-t p-3 text-center text-destructive">
+                  To allow {MIN_POLL_HOURS} hours to conduct your poll, and{" "}
+                  {ccParams.minNotice} hours minimum booking notice, consider
+                  selecting options at or after{" "}
+                  {earliestGoodSlot.toLocaleString()}.
                 </div>
               ) : null}
             </div>

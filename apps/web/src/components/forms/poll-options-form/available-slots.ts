@@ -16,6 +16,7 @@ export type AvailableSlotsInfo = {
   slotsByDay: SlotsByDay;
   minTime: Date;
   maxTime: Date;
+  earliestGoodSlot: Date;
 };
 
 export async function getAvailableSlots(
@@ -26,6 +27,7 @@ export async function getAvailableSlots(
   duration: number,
   minTimeParam: string,
   maxTimeParam: string,
+  minFuture: number,
 ): Promise<AvailableSlotsInfo> {
   const getScheduleInput = {
     json: {
@@ -61,19 +63,15 @@ export async function getAvailableSlots(
   const res = await fetch(getScheduleUrl);
   const resJson: { result: { data: { json: { slots: SlotTimesByDay } } } } =
     await res.json();
-  const slotsByDay = Object.entries(resJson.result.data.json.slots).map(
-    ([day, times]) => [day, new Set(times.map((t) => t.time))],
-  );
-  const [minTime, maxTime] = getMinMaxTimes(
-    resJson.result.data.json.slots,
-    duration,
-    minTimeParam,
-    maxTimeParam,
-  );
+  const slots = resJson.result.data.json.slots;
+  const slotsByDay = Object.entries(slots).map(([day, times]) => [
+    day,
+    new Set(times.map((t) => t.time)),
+  ]);
   return {
     slotsByDay: Object.fromEntries(slotsByDay),
-    minTime,
-    maxTime,
+    earliestGoodSlot: getEarliestGoodSlot(slots, minFuture),
+    ...getMinMaxTimes(slots, duration, minTimeParam, maxTimeParam),
   };
 }
 
@@ -108,5 +106,20 @@ function getTimeRange(minHm: string, maxHm: string, addToMax?: number) {
     .set("h", Number.parseInt(maxParts[0], 10))
     .set("m", Number.parseInt(maxParts.at(1) ?? "00", 10))
     .add(addToMax ?? 0, "minute");
-  return [minTime.toDate(), maxTime.toDate()];
+  return { minTime: minTime.toDate(), maxTime: maxTime.toDate() };
+}
+
+function getEarliestGoodSlot(slots: SlotTimesByDay, minFuture: number) {
+  const sortedDays = Object.keys(slots).sort();
+  const now = Date.now();
+  const minFutureMs = minFuture * 60 * 60 * 1000;
+  for (const day of sortedDays) {
+    const goodSlot = slots[day].find(
+      (d) => new Date(d.time).valueOf() - now >= minFutureMs,
+    );
+    if (goodSlot) {
+      return new Date(goodSlot.time);
+    }
+  }
+  return new Date();
 }
