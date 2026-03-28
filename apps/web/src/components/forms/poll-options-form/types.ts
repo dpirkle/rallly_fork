@@ -27,3 +27,13 @@ export interface DateTimePickerProps {
   max?: Date;
   step?: number;
 }
+
+export type CalcomParams = {
+  userName: string;
+  eventTypeSlug: string;
+  minTime: string;
+  maxTime: string;
+  duration: string;
+  title: string;
+  step: string;
+};

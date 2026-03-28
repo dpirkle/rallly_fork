@@ -24,8 +24,8 @@ export async function getAvailableSlots(
   userName: string,
   eventTypeSlug: string,
   duration: number,
-  minTimeParam: string | null,
-  maxTimeParam: string | null,
+  minTimeParam: string,
+  maxTimeParam: string,
 ): Promise<AvailableSlotsInfo> {
   const getScheduleInput = {
     json: {
@@ -80,8 +80,8 @@ export async function getAvailableSlots(
 function getMinMaxTimes(
   slots: SlotTimesByDay,
   duration: number,
-  minTimeParam: string | null,
-  maxTimeParam: string | null,
+  minTimeParam: string,
+  maxTimeParam: string,
 ) {
   if (minTimeParam && maxTimeParam) {
     return getTimeRange(minTimeParam, maxTimeParam);

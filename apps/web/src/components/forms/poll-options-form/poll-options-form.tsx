@@ -1,5 +1,5 @@
 import { Button } from "@rallly/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@rallly/ui/card";
+import { Card, CardDescription, CardHeader } from "@rallly/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -10,17 +10,19 @@ import {
 } from "@rallly/ui/dialog";
 import { FormField, FormMessage } from "@rallly/ui/form";
 import dayjs, { type Dayjs, type ManipulateType } from "dayjs";
+import type { ReadonlyURLSearchParams } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { useFormContext } from "react-hook-form";
 import { Trans } from "@/components/trans";
 import { useTranslation } from "@/i18n/client";
+import type { GetPollApiResponse } from "@/trpc/client/types";
 import { getBrowserTimeZone } from "../../../utils/date-time-utils";
 import type { NewEventData } from "../types";
 import type { SlotsByDay } from "./available-slots";
 import { getAvailableSlots } from "./available-slots";
 import MonthCalendar from "./month-calendar";
-import type { DateTimeOption } from "./types";
+import type { CalcomParams, DateTimeOption } from "./types";
 import WeekCalendar from "./week-calendar";
 
 export type PollOptionsData = {
@@ -35,7 +37,28 @@ type SlotDjssByDay = {
   [day: string]: Dayjs[];
 };
 
-const PollOptionsForm = ({ children }: React.PropsWithChildren) => {
+function searchToCalcomParams(
+  searchParams: ReadonlyURLSearchParams,
+): CalcomParams {
+  return {
+    userName: searchParams.get("userName") ?? "",
+    eventTypeSlug: searchParams.get("eventTypeSlug") ?? "",
+    minTime: searchParams.get("minTime") ?? "",
+    maxTime: searchParams.get("maxTime") ?? "",
+    duration: searchParams.get("duration") ?? "180",
+    title: searchParams.get("title") ?? "Odyssey Tabletop",
+    step: searchParams.get("step") ?? "30",
+  };
+}
+
+interface PollOptionsFormProps {
+  poll?: GetPollApiResponse;
+}
+
+const PollOptionsForm = ({
+  poll,
+  children,
+}: React.PropsWithChildren<PollOptionsFormProps>) => {
   const { t } = useTranslation();
   const form = useFormContext<NewEventData>();
 
@@ -86,8 +109,15 @@ const PollOptionsForm = ({ children }: React.PropsWithChildren) => {
   );
 
   const searchParams = useSearchParams();
-  const duration = Number.parseInt(searchParams.get("duration") ?? "180", 10);
-  const step = Number.parseInt(searchParams.get("step") ?? "30", 10);
+  const ccParams = React.useMemo(() => {
+    if (poll?.description) {
+      return JSON.parse(poll.description) as CalcomParams;
+    } else {
+      return searchToCalcomParams(searchParams);
+    }
+  }, [searchParams, poll]);
+  const duration = Number.parseInt(ccParams.duration, 10);
+  const step = Number.parseInt(ccParams.step, 10);
   const [availableSlots, setAvailableSlots] = React.useState<SlotsByDay>({});
   const [availableDjss, setAvailableDjss] = React.useState<SlotDjssByDay>({});
   const [minTime, setMinTime] = React.useState<Date>();
@@ -96,18 +126,16 @@ const PollOptionsForm = ({ children }: React.PropsWithChildren) => {
     const navDate = dayjs(navigationDate);
     const startTime = navDate.subtract(2, selectedView.value as ManipulateType);
     const endTime = navDate.add(2, selectedView.value as ManipulateType);
-    const userName = searchParams.get("userName");
-    const eventTypeSlug = searchParams.get("eventTypeSlug");
-    if (userName && eventTypeSlug) {
+    if (ccParams.userName && ccParams.eventTypeSlug) {
       const fetchAvailableSlots = async () => {
         const slotsForRange = await getAvailableSlots(
           startTime.toISOString(),
           endTime.toISOString(),
-          userName,
-          eventTypeSlug,
+          ccParams.userName,
+          ccParams.eventTypeSlug,
           duration,
-          searchParams.get("minTime"),
-          searchParams.get("maxTime"),
+          ccParams.minTime,
+          ccParams.maxTime,
         );
         setAvailableSlots(slotsForRange.slotsByDay);
         const availableDateEntries = Object.entries(
@@ -119,7 +147,7 @@ const PollOptionsForm = ({ children }: React.PropsWithChildren) => {
       };
       fetchAvailableSlots();
     }
-  }, [navigationDate, selectedView.value, searchParams.get, duration]);
+  }, [navigationDate, selectedView.value, ccParams, duration]);
 
   const isAvailableSlot = (slotTime: Date) => {
     const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
@@ -148,7 +176,10 @@ const PollOptionsForm = ({ children }: React.PropsWithChildren) => {
             <CardDescription>
               <Trans
                 i18nKey="selectPotentialDates"
-                values={{ title: searchParams.get("title") }}
+                values={{
+                  title: ccParams.title,
+                  action: poll ? "Save" : "Create Poll",
+                }}
               >
                 Select potential dates for your event
               </Trans>

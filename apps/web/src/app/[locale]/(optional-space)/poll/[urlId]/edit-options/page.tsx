@@ -140,7 +140,7 @@ const Page = () => {
           }
         })}
       >
-        <PollOptionsForm>
+        <PollOptionsForm poll={poll}>
           <CardFooter className="justify-between">
             <Button asChild>
               <Link href={pollLink}>
