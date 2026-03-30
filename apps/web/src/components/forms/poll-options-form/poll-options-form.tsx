@@ -151,7 +151,10 @@ const PollOptionsForm = ({
 
   const watchNavigationDate = watch("navigationDate");
   const navigationDate = React.useMemo(
-    () => new Date(watchNavigationDate ?? earliestGoodSlot),
+    () =>
+      watchNavigationDate || earliestGoodSlot
+        ? new Date(watchNavigationDate ?? earliestGoodSlot)
+        : undefined,
     [watchNavigationDate, earliestGoodSlot],
   );
 

@@ -29,9 +29,11 @@ This is needed in order to have the right base URL for the Railway deploy availa
 To build a new image:
 
 ```
+cp .env.docker.build apps/web/.env.local
 docker compose build rallly_selfhosted
 docker image tag rallly_fork-rallly_selfhosted dpirkle/rallly_fork-rallly_selfhosted:latest
 docker push dpirkle/rallly_fork-rallly_selfhosted:latest
+cp .env.local apps/web
 ```
 
 Then go to Railway to redeploy the app.
