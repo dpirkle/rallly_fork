@@ -273,7 +273,6 @@ const DesktopPoll: React.FunctionComponent = () => {
                 {canAddNewParticipant && mode !== "new" ? (
                   <Button
                     className="ml-2"
-                    size="icon"
                     variant="ghost"
                     data-testid="add-participant-button"
                     onClick={() => {
@@ -283,6 +282,7 @@ const DesktopPoll: React.FunctionComponent = () => {
                     <Icon>
                       <PlusIcon />
                     </Icon>
+                    Add My Vote
                   </Button>
                 ) : null}
               </div>
