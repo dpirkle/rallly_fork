@@ -1,8 +1,19 @@
+import { Mutex } from "async-mutex";
 import dayjs, { type Dayjs } from "dayjs";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import type { GetPollApiResponse } from "@/trpc/client/types";
 
+const mutex = new Mutex();
+
 const MIN_POLL_HOURS = 2 * 24;
+
+const fetchCache: {
+  lastRequestUrl: string | null;
+  lastCalcomAvailability: CalcomAvailability | null;
+} = {
+  lastRequestUrl: null,
+  lastCalcomAvailability: null,
+};
 
 export type CalcomParams = {
   userName: string;
@@ -76,46 +87,12 @@ export type CalcomAvailability = {
 };
 
 export async function getAvailableSlots(
-  startTime: string,
-  endTime: string,
-  userName: string,
-  eventTypeSlug: string,
+  getScheduleUrl: string,
   duration: number,
   minTimeParam: string,
   maxTimeParam: string,
   minFuture: number,
 ): Promise<AvailableSlotsInfo> {
-  const getScheduleInput = {
-    json: {
-      isTeamEvent: false,
-      usernameList: [userName],
-      eventTypeSlug,
-      startTime,
-      endTime,
-      timeZone: "America/Los_Angeles",
-      duration: null,
-      rescheduleUid: null,
-      orgSlug: null,
-      teamMemberEmail: null,
-      routedTeamMemberIds: null,
-      skipContactOwner: false,
-      routingFormResponseId: null,
-      email: null,
-      embedConnectVersion: "0",
-      _isDryRun: false,
-    },
-    meta: {
-      values: {
-        duration: ["undefined"],
-        orgSlug: ["undefined"],
-        teamMemberEmail: ["undefined"],
-        routingFormResponseId: ["undefined"],
-      },
-    },
-  };
-
-  const inputComponent = encodeURIComponent(JSON.stringify(getScheduleInput));
-  const getScheduleUrl = `${process.env.NEXT_PUBLIC_CALCOM_URL}/api/trpc/slots/getSchedule?input=${inputComponent}`;
   const res = await fetch(getScheduleUrl);
   const resJson: { result: { data: { json: { slots: SlotTimesByDay } } } } =
     await res.json();
@@ -183,59 +160,114 @@ function getEarliestGoodSlot(slots: SlotTimesByDay, minFuture: number) {
 export const fetchCalcomAvailability = async (
   ccParams: CalcomParams,
 ): Promise<CalcomAvailability> => {
-  const startTime = dayjs();
-  const endTime = startTime.add(3, "month");
-  const duration = Number.parseInt(ccParams.duration, 10);
-  const minNotice = Number.parseInt(ccParams.minNotice, 10);
-  const fetchAvailableSlots = async () => {
-    const slotsForRange = await getAvailableSlots(
+  return await mutex.runExclusive(async () => {
+    const startTime = dayjs().startOf("minute"); // url stays the same for 1 minute
+    const endTime = startTime.add(3, "month");
+    const calcomUrl = getCalcomScheduleUrl(
       startTime.toISOString(),
       endTime.toISOString(),
       ccParams.userName,
       ccParams.eventTypeSlug,
-      duration,
-      ccParams.minTime,
-      ccParams.maxTime,
-      minNotice + MIN_POLL_HOURS,
     );
-    const availableDateEntries = Object.entries(slotsForRange.slotsByDay).map(
-      ([day, slots]) => [day, [...slots].map((s) => dayjs(s))],
-    );
-    return {
-      availableSlots: slotsForRange.slotsByDay,
-      availableDjss: Object.fromEntries(availableDateEntries) as SlotDjssByDay,
-      minTime: slotsForRange.minTime,
-      maxTime: slotsForRange.maxTime,
-      earliestGoodSlot: slotsForRange.earliestGoodSlot,
-      duration,
-      minNotice,
-      step: Number.parseInt(ccParams.step, 10),
-    };
-  };
-  const slotInfo = await fetchAvailableSlots();
-
-  const isAvailableSlot = (slotTime: Date) => {
-    const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
-    const laDate = laDayjs.format("YYYY-MM-DD");
-    const utcDateAndTime = laDayjs.toISOString();
-    return slotInfo.availableSlots[laDate]?.has(utcDateAndTime);
-  };
-
-  const isWithinAvailableSlot = (slotTime: Date) => {
-    const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
-    const laDate = laDayjs.format("YYYY-MM-DD");
-    const slots = slotInfo.availableDjss[laDate];
-    if (slots === undefined) {
-      return false;
+    if (
+      fetchCache.lastRequestUrl === calcomUrl &&
+      fetchCache.lastCalcomAvailability
+    ) {
+      return fetchCache.lastCalcomAvailability;
     }
-    return slots.some((slot) =>
-      laDayjs.isBetween(slot, slot.add(duration, "minute"), "minute", "[)"),
-    );
-  };
-  return {
-    ...slotInfo,
-    minPollHours: MIN_POLL_HOURS,
-    isAvailableSlot,
-    isWithinAvailableSlot,
-  };
+    const duration = Number.parseInt(ccParams.duration, 10);
+    const minNotice = Number.parseInt(ccParams.minNotice, 10);
+    const fetchAvailableSlots = async () => {
+      const slotsForRange = await getAvailableSlots(
+        calcomUrl,
+        duration,
+        ccParams.minTime,
+        ccParams.maxTime,
+        minNotice + MIN_POLL_HOURS,
+      );
+      const availableDateEntries = Object.entries(slotsForRange.slotsByDay).map(
+        ([day, slots]) => [day, [...slots].map((s) => dayjs(s))],
+      );
+      return {
+        availableSlots: slotsForRange.slotsByDay,
+        availableDjss: Object.fromEntries(
+          availableDateEntries,
+        ) as SlotDjssByDay,
+        minTime: slotsForRange.minTime,
+        maxTime: slotsForRange.maxTime,
+        earliestGoodSlot: slotsForRange.earliestGoodSlot,
+        duration,
+        minNotice,
+        step: Number.parseInt(ccParams.step, 10),
+      };
+    };
+    const slotInfo = await fetchAvailableSlots();
+
+    const isAvailableSlot = (slotTime: Date) => {
+      const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
+      const laDate = laDayjs.format("YYYY-MM-DD");
+      const utcDateAndTime = laDayjs.toISOString();
+      return slotInfo.availableSlots[laDate]?.has(utcDateAndTime);
+    };
+
+    const isWithinAvailableSlot = (slotTime: Date) => {
+      const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
+      const laDate = laDayjs.format("YYYY-MM-DD");
+      const slots = slotInfo.availableDjss[laDate];
+      if (slots === undefined) {
+        return false;
+      }
+      return slots.some((slot) =>
+        laDayjs.isBetween(slot, slot.add(duration, "minute"), "minute", "[)"),
+      );
+    };
+    const calcomAvailability = {
+      ...slotInfo,
+      minPollHours: MIN_POLL_HOURS,
+      isAvailableSlot,
+      isWithinAvailableSlot,
+    };
+    fetchCache.lastRequestUrl = calcomUrl;
+    fetchCache.lastCalcomAvailability = calcomAvailability;
+    return calcomAvailability;
+  });
 };
+function getCalcomScheduleUrl(
+  startTime: string,
+  endTime: string,
+  userName: string,
+  eventTypeSlug: string,
+) {
+  const getScheduleInput = {
+    json: {
+      isTeamEvent: false,
+      usernameList: [userName],
+      eventTypeSlug,
+      startTime,
+      endTime,
+      timeZone: "America/Los_Angeles",
+      duration: null,
+      rescheduleUid: null,
+      orgSlug: null,
+      teamMemberEmail: null,
+      routedTeamMemberIds: null,
+      skipContactOwner: false,
+      routingFormResponseId: null,
+      email: null,
+      embedConnectVersion: "0",
+      _isDryRun: false,
+    },
+    meta: {
+      values: {
+        duration: ["undefined"],
+        orgSlug: ["undefined"],
+        teamMemberEmail: ["undefined"],
+        routingFormResponseId: ["undefined"],
+      },
+    },
+  };
+
+  const inputComponent = encodeURIComponent(JSON.stringify(getScheduleInput));
+  const calcomUrl = `${process.env.NEXT_PUBLIC_CALCOM_URL}/api/trpc/slots/getSchedule?input=${inputComponent}`;
+  return calcomUrl;
+}
