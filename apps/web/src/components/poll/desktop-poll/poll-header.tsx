@@ -11,16 +11,22 @@ import { ConnectedScoreSummary } from "@/components/poll/score-summary";
 import { useOptions } from "@/components/poll-context";
 import { Trans } from "@/components/trans";
 
+export interface OptionsAvailable {
+  [optionId: string]: boolean;
+}
+
 const TimeRange: React.FunctionComponent<{
   start: string;
   end: string;
   duration: string;
   className?: string;
-}> = ({ start, end, duration, className }) => {
+  isAvailable: boolean;
+}> = ({ start, end, duration, className, isAvailable }) => {
   return (
     <div
       className={cn(
         "relative flex flex-col items-center gap-1.5 font-normal text-muted-foreground text-xs",
+        { "line-through": !isAvailable },
         className,
       )}
     >
@@ -61,7 +67,9 @@ const dayRowHeight = 60;
 
 const scoreRowTop = monthRowHeight + dayRowHeight;
 
-const PollHeader: React.FunctionComponent = () => {
+const PollHeader: React.FunctionComponent<{
+  availabilities: OptionsAvailable;
+}> = ({ availabilities }) => {
   const { options } = useOptions();
   return (
     <>
@@ -149,6 +157,7 @@ const PollHeader: React.FunctionComponent = () => {
                     start={option.startTime}
                     end={option.endTime}
                     duration={option.duration}
+                    isAvailable={availabilities[option.optionId]}
                   />
                 ) : (
                   <p className="font-normal text-muted-foreground text-xs opacity-50">

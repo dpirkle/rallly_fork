@@ -290,11 +290,11 @@ export function SchedulePollDialog(props: DialogProps) {
           <DialogDescription>
             <Trans
               i18nKey="schedulePollDescription"
-              defaults="Select a final date for your event."
+              defaults="Select a final time for your event."
             />{" "}
             {isAllAvailable
               ? ""
-              : "Please note that some dates are no longer available."}
+              : "Please note that some times are no longer available."}
           </DialogDescription>
         </DialogHeader>
         <SchedulePollForm

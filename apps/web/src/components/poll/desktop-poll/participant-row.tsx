@@ -9,12 +9,12 @@ import type * as React from "react";
 import { OptimizedAvatarImage } from "@/components/optimized-avatar-image";
 import { Participant, ParticipantName } from "@/components/participant";
 import { ParticipantDropdown } from "@/components/participant-dropdown";
+import type { OptionsAvailable } from "@/components/poll/desktop-poll/poll-header";
 import { usePoll } from "@/components/poll-context";
 import { Trans } from "@/components/trans";
 import { useUser } from "@/components/user-provider";
 import { usePermissions } from "@/contexts/permissions";
 import type { Vote } from "@/trpc/client/types";
-
 import VoteIcon from "../vote-icon";
 import ParticipantRowForm from "./participant-row-form";
 
@@ -30,6 +30,7 @@ export interface ParticipantRowProps {
   className?: string;
   editMode?: boolean;
   onChangeEditMode?: (editMode: boolean) => void;
+  availabilities: OptionsAvailable;
 }
 
 export const ParticipantRowView: React.FunctionComponent<{
@@ -40,7 +41,17 @@ export const ParticipantRowView: React.FunctionComponent<{
   className?: string;
   isYou?: boolean;
   participantId: string;
-}> = ({ name, email, action, votes, className, isYou, participantId }) => {
+  isAvailable: boolean[];
+}> = ({
+  name,
+  email,
+  action,
+  votes,
+  className,
+  isYou,
+  participantId,
+  isAvailable,
+}) => {
   return (
     <tr
       data-testid="participant-row"
@@ -76,7 +87,7 @@ export const ParticipantRowView: React.FunctionComponent<{
             )}
           >
             <div className={cn("flex items-center justify-center")}>
-              <VoteIcon type={vote} />
+              {isAvailable[i] ? <VoteIcon type={vote} /> : null}
             </div>
           </td>
         );
@@ -91,6 +102,7 @@ const ParticipantRow: React.FunctionComponent<ParticipantRowProps> = ({
   editMode,
   className,
   onChangeEditMode,
+  availabilities,
 }) => {
   const { ownsObject } = useUser();
   const { getVote, optionIds } = usePoll();
@@ -108,6 +120,7 @@ const ParticipantRow: React.FunctionComponent<ParticipantRowProps> = ({
         email={participant.email}
         isYou={isYou}
         onCancel={() => onChangeEditMode?.(false)}
+        availabilities={availabilities}
       />
     );
   }
@@ -120,6 +133,7 @@ const ParticipantRow: React.FunctionComponent<ParticipantRowProps> = ({
       votes={optionIds.map((optionId) => {
         return getVote(participant.id, optionId);
       })}
+      isAvailable={optionIds.map((id) => availabilities[id])}
       participantId={participant.id}
       action={
         canEdit ? (

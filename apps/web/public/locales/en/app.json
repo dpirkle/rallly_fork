@@ -602,6 +602,6 @@
   "closePoll": "Close",
   "pollStatusCanceled": "Canceled",
   "schedulePoll": "Schedule",
-  "schedulePollDescription": "Select a final date for your event.",
+  "schedulePollDescription": "Select a final time for your event.",
   "featureNameSchedule": "Schedule Poll"
 }

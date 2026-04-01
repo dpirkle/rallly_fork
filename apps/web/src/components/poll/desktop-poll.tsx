@@ -28,14 +28,18 @@ import { Trans } from "@/components/trans";
 import { usePermissions } from "@/contexts/permissions";
 import { usePoll } from "@/contexts/poll";
 import { useTranslation } from "@/i18n/client";
-
+import type { CalcomAvailability } from "@/utils/calcom";
+import {
+  fetchCalcomAvailability,
+  getCalcomParamsFromPoll,
+} from "@/utils/calcom";
 import {
   useParticipants,
   useVisibleParticipants,
 } from "../participants-provider";
 import ParticipantRow from "./desktop-poll/participant-row";
 import ParticipantRowForm from "./desktop-poll/participant-row-form";
-import PollHeader from "./desktop-poll/poll-header";
+import PollHeader, { type OptionsAvailable } from "./desktop-poll/poll-header";
 
 function EscapeListener({ onEscape }: { onEscape: () => void }) {
   React.useEffect(() => {
@@ -93,6 +97,39 @@ const DesktopPoll: React.FunctionComponent = () => {
   const [measureRef, { height }] = useMeasure<HTMLDivElement>();
 
   const [didScroll, setDidScroll] = React.useState(false);
+
+  const ccParams = React.useMemo(() => getCalcomParamsFromPoll(poll), [poll]);
+  const [availability, setAvailability] = React.useState<CalcomAvailability>();
+  const [isAllAvailable, setAllAvailable] = React.useState(true);
+  const [availabilities, setAvailabilities] = React.useState<OptionsAvailable>(
+    {},
+  );
+
+  React.useEffect(() => {
+    if (ccParams) {
+      const fetchAndSetAvailability = async () => {
+        const ccAvailability = await fetchCalcomAvailability(ccParams);
+        setAvailability(ccAvailability);
+      };
+      fetchAndSetAvailability();
+    }
+  }, [ccParams]);
+
+  React.useEffect(() => {
+    setAllAvailable(
+      poll.options.every(
+        (opt) => availability?.isAvailableSlot(opt.startTime) ?? true,
+      ),
+    );
+    setAvailabilities(
+      Object.fromEntries(
+        poll.options.map((opt) => [
+          opt.id,
+          availability?.isAvailableSlot(opt.startTime) ?? true,
+        ]),
+      ),
+    );
+  }, [poll, availability]);
 
   const goToNextPage = () => {
     setDidScroll(true);
@@ -286,6 +323,11 @@ const DesktopPoll: React.FunctionComponent = () => {
                   </Button>
                 ) : null}
               </div>
+              {!isAllAvailable ? (
+                <div className="text-base text-sm italic">
+                  Please note that some times are no longer available
+                </div>
+              ) : null}
               <TableControls />
             </CardHeader>
             {poll.options[0]?.duration !== 0 && poll.timeZone ? (
@@ -316,11 +358,14 @@ const DesktopPoll: React.FunctionComponent = () => {
                   >
                     <table className="w-full table-auto border-separate border-spacing-0 bg-muted/50">
                       <thead>
-                        <PollHeader />
+                        <PollHeader availabilities={availabilities} />
                       </thead>
                       <tbody className="relative">
                         {mode === "new" ? (
-                          <ParticipantRowForm isNew={true} />
+                          <ParticipantRowForm
+                            isNew={true}
+                            availabilities={availabilities}
+                          />
                         ) : null}
                         {visibleParticipants.length > 0
                           ? visibleParticipants.map((participant, i) => {
@@ -353,6 +398,7 @@ const DesktopPoll: React.FunctionComponent = () => {
                                       );
                                     }
                                   }}
+                                  availabilities={availabilities}
                                 />
                               );
                             })

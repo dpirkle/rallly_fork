@@ -13,11 +13,11 @@ import { Controller } from "react-hook-form";
 
 import { OptimizedAvatarImage } from "@/components/optimized-avatar-image";
 import { Participant, ParticipantName } from "@/components/participant";
+import type { OptionsAvailable } from "@/components/poll/desktop-poll/poll-header";
 import { useVotingForm } from "@/components/poll/voting-form";
 import { YouAvatar } from "@/components/poll/you-avatar";
 import { Trans } from "@/components/trans";
 import { useTranslation } from "@/i18n/client";
-
 import { usePoll } from "../../poll-context";
 import { toggleVote, VoteSelector } from "../vote-selector";
 
@@ -27,6 +27,7 @@ export interface ParticipantRowFormProps {
   email?: string;
   isYou?: boolean;
   isNew?: boolean;
+  availabilities?: OptionsAvailable;
   onCancel?: () => void;
 }
 
@@ -34,6 +35,7 @@ const ParticipantRowForm = ({
   name,
   email,
   isNew,
+  availabilities,
   className,
 }: ParticipantRowFormProps) => {
   const { t } = useTranslation();
@@ -110,7 +112,7 @@ const ParticipantRowForm = ({
         </div>
       </td>
       {optionIds.map((optionId, i) => {
-        return (
+        return (availabilities?.[optionId] ?? true) ? (
           <td
             key={optionId}
             className="relative h-12 border-b border-l group-[.last-row]:border-b-0"
@@ -143,6 +145,8 @@ const ParticipantRowForm = ({
               )}
             />
           </td>
+        ) : (
+          <td key={optionId} />
         );
       })}
       <td className="border-l" />
