@@ -9,23 +9,24 @@ import {
   useDialog,
 } from "@rallly/ui/dialog";
 import { FormField, FormMessage } from "@rallly/ui/form";
-import dayjs, { type Dayjs } from "dayjs";
-import type { ReadonlyURLSearchParams } from "next/navigation";
+import dayjs from "dayjs";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { useFormContext } from "react-hook-form";
 import { Trans } from "@/components/trans";
 import { useTranslation } from "@/i18n/client";
 import type { GetPollApiResponse } from "@/trpc/client/types";
+import type { CalcomAvailability } from "@/utils/calcom";
+import {
+  fetchCalcomAvailability,
+  getCalcomParamsFromPoll,
+  searchToCalcomParams,
+} from "@/utils/calcom";
 import { getBrowserTimeZone } from "../../../utils/date-time-utils";
 import type { NewEventData } from "../types";
-import type { SlotsByDay } from "./available-slots";
-import { getAvailableSlots } from "./available-slots";
 import MonthCalendar from "./month-calendar";
-import type { CalcomParams, DateTimeOption, TimeOption } from "./types";
+import type { DateTimeOption, TimeOption } from "./types";
 import WeekCalendar from "./week-calendar";
-
-const MIN_POLL_HOURS = 2 * 24;
 
 export type PollOptionsData = {
   navigationDate: string; // used to navigate to the right part of the calendar
@@ -34,25 +35,6 @@ export type PollOptionsData = {
   view: string;
   options: DateTimeOption[];
 };
-
-type SlotDjssByDay = {
-  [day: string]: Dayjs[];
-};
-
-export function searchToCalcomParams(
-  searchParams: ReadonlyURLSearchParams,
-): CalcomParams {
-  return {
-    userName: searchParams.get("userName") ?? "",
-    eventTypeSlug: searchParams.get("eventTypeSlug") ?? "",
-    minTime: searchParams.get("minTime") ?? "",
-    maxTime: searchParams.get("maxTime") ?? "",
-    duration: searchParams.get("duration") ?? "180",
-    title: searchParams.get("title") ?? "Odyssey Tabletop",
-    step: searchParams.get("step") ?? "30",
-    minNotice: searchParams.get("minNotice") ?? "48",
-  };
-}
 
 interface PollOptionsFormProps {
   poll?: GetPollApiResponse;
@@ -107,86 +89,41 @@ const PollOptionsForm = ({
 
   const searchParams = useSearchParams();
   const ccParams = React.useMemo(() => {
-    if (poll?.description) {
-      return JSON.parse(poll.description) as CalcomParams;
-    } else {
-      return searchToCalcomParams(searchParams);
-    }
+    return (
+      (poll && getCalcomParamsFromPoll(poll)) ??
+      searchToCalcomParams(searchParams)
+    );
   }, [searchParams, poll]);
-  const duration = Number.parseInt(ccParams.duration, 10);
-  const step = Number.parseInt(ccParams.step, 10);
-  const [availableSlots, setAvailableSlots] = React.useState<SlotsByDay>({});
-  const [availableDjss, setAvailableDjss] = React.useState<SlotDjssByDay>({});
-  const [minTime, setMinTime] = React.useState<Date>();
-  const [maxTime, setMaxTime] = React.useState<Date>();
-  const [earliestGoodSlot, setEarliestGoodSlot] = React.useState<Date>();
   const [isTooSoon, setTooSoon] = React.useState(false);
+
+  const [availability, setAvailability] = React.useState<CalcomAvailability>();
   React.useEffect(() => {
-    const startTime = dayjs();
-    const endTime = startTime.add(3, "month");
-    if (ccParams.userName && ccParams.eventTypeSlug) {
-      const fetchAvailableSlots = async () => {
-        const slotsForRange = await getAvailableSlots(
-          startTime.toISOString(),
-          endTime.toISOString(),
-          ccParams.userName,
-          ccParams.eventTypeSlug,
-          duration,
-          ccParams.minTime,
-          ccParams.maxTime,
-          Number.parseInt(ccParams.minNotice, 10) + MIN_POLL_HOURS,
-        );
-        setAvailableSlots(slotsForRange.slotsByDay);
-        const availableDateEntries = Object.entries(
-          slotsForRange.slotsByDay,
-        ).map(([day, slots]) => [day, [...slots].map((s) => dayjs(s))]);
-        setAvailableDjss(Object.fromEntries(availableDateEntries));
-        setMinTime(slotsForRange.minTime);
-        setMaxTime(slotsForRange.maxTime);
-        setEarliestGoodSlot(slotsForRange.earliestGoodSlot);
-      };
-      fetchAvailableSlots();
-    }
-  }, [ccParams, duration]);
+    const fetchAndSetAvailability = async () => {
+      const ccAvailability = await fetchCalcomAvailability(ccParams);
+      setAvailability(ccAvailability);
+    };
+    fetchAndSetAvailability();
+  }, [ccParams]);
 
   const watchNavigationDate = watch("navigationDate");
   const navigationDate = React.useMemo(
     () =>
-      watchNavigationDate || earliestGoodSlot
-        ? new Date(watchNavigationDate ?? earliestGoodSlot)
+      watchNavigationDate || availability?.earliestGoodSlot
+        ? new Date(watchNavigationDate ?? availability?.earliestGoodSlot)
         : undefined,
-    [watchNavigationDate, earliestGoodSlot],
+    [watchNavigationDate, availability],
   );
 
-  const isAvailableSlot = (slotTime: Date) => {
-    const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
-    const laDate = laDayjs.format("YYYY-MM-DD");
-    const utcDateAndTime = laDayjs.toISOString();
-    return availableSlots[laDate]?.has(utcDateAndTime);
-  };
-
-  const isWithinAvailableSlot = (slotTime: Date) => {
-    const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
-    const laDate = laDayjs.format("YYYY-MM-DD");
-    const slots = availableDjss[laDate];
-    if (slots === undefined) {
-      return false;
-    }
-    return slots.some((slot) =>
-      laDayjs.isBetween(slot, slot.add(duration, "minute"), "minute", "[)"),
-    );
-  };
-
   React.useEffect(() => {
-    if (earliestGoodSlot) {
+    if (availability?.earliestGoodSlot) {
       const tooSoon = watchOptions.some((opt) => {
         const start = (opt as TimeOption).start;
         const laDayjs = dayjs(start).tz("America/Los_Angeles", true);
-        return laDayjs.isBefore(earliestGoodSlot);
+        return laDayjs.isBefore(availability.earliestGoodSlot);
       });
       setTooSoon(tooSoon);
     }
-  }, [watchOptions, earliestGoodSlot]);
+  }, [watchOptions, availability]);
 
   return (
     <Card>
@@ -273,27 +210,27 @@ const PollOptionsForm = ({
                 onChange={(options) => {
                   field.onChange(options);
                 }}
-                duration={duration}
+                duration={availability?.duration ?? 60}
                 onChangeDuration={(duration) => {
                   setValue("duration", duration);
                 }}
-                isAvailableSlot={isAvailableSlot}
-                isWithinAvailableSlot={isWithinAvailableSlot}
-                min={minTime}
-                max={maxTime}
-                step={step}
+                isAvailableSlot={availability?.isAvailableSlot}
+                isWithinAvailableSlot={availability?.isWithinAvailableSlot}
+                min={availability?.minTime}
+                max={availability?.maxTime}
+                step={availability?.step}
               />
               {formState.errors.options ? (
                 <div className="border-t p-3 text-center text-destructive">
                   <FormMessage />
                 </div>
               ) : null}
-              {isTooSoon && earliestGoodSlot ? (
+              {isTooSoon && availability?.earliestGoodSlot ? (
                 <div className="border-t p-3 text-center text-destructive">
-                  To allow {MIN_POLL_HOURS} hours to conduct your poll, and{" "}
-                  {ccParams.minNotice} hours minimum booking notice, consider
-                  selecting options at or after{" "}
-                  {earliestGoodSlot.toLocaleString()}.
+                  To allow {availability.minPollHours} hours to conduct your
+                  poll, and {availability?.minNotice} hours minimum booking
+                  notice, consider selecting options at or after{" "}
+                  {availability?.earliestGoodSlot.toLocaleString()}.
                 </div>
               ) : null}
             </div>

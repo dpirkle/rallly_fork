@@ -1,4 +1,46 @@
-import dayjs from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
+import type { ReadonlyURLSearchParams } from "next/navigation";
+import type { GetPollApiResponse } from "@/trpc/client/types";
+
+const MIN_POLL_HOURS = 2 * 24;
+
+export type CalcomParams = {
+  userName: string;
+  eventTypeSlug: string;
+  minTime: string;
+  maxTime: string;
+  duration: string;
+  title: string;
+  step: string;
+  minNotice: string;
+};
+
+export type SlotDjssByDay = {
+  [day: string]: Dayjs[];
+};
+
+export function searchToCalcomParams(
+  searchParams: ReadonlyURLSearchParams,
+): CalcomParams {
+  return {
+    userName: searchParams.get("userName") ?? "",
+    eventTypeSlug: searchParams.get("eventTypeSlug") ?? "",
+    minTime: searchParams.get("minTime") ?? "",
+    maxTime: searchParams.get("maxTime") ?? "",
+    duration: searchParams.get("duration") ?? "180",
+    title: searchParams.get("title") ?? "Odyssey Tabletop",
+    step: searchParams.get("step") ?? "30",
+    minNotice: searchParams.get("minNotice") ?? "48",
+  };
+}
+
+export function getCalcomParamsFromPoll(
+  poll: GetPollApiResponse,
+): CalcomParams | null {
+  return poll.description
+    ? (JSON.parse(poll.description) as CalcomParams)
+    : null;
+}
 
 type SlotTime = {
   time: string;
@@ -17,6 +59,20 @@ export type AvailableSlotsInfo = {
   minTime: Date;
   maxTime: Date;
   earliestGoodSlot: Date;
+};
+
+export type CalcomAvailability = {
+  isAvailableSlot: (slotTime: Date) => boolean;
+  isWithinAvailableSlot: (slotTime: Date) => boolean;
+  availableSlots: SlotsByDay;
+  availableDjss: SlotDjssByDay;
+  minTime: Date;
+  maxTime: Date;
+  earliestGoodSlot: Date;
+  minPollHours: number;
+  duration: number;
+  step: number;
+  minNotice: number;
 };
 
 export async function getAvailableSlots(
@@ -123,3 +179,63 @@ function getEarliestGoodSlot(slots: SlotTimesByDay, minFuture: number) {
   }
   return new Date();
 }
+
+export const fetchCalcomAvailability = async (
+  ccParams: CalcomParams,
+): Promise<CalcomAvailability> => {
+  const startTime = dayjs();
+  const endTime = startTime.add(3, "month");
+  const duration = Number.parseInt(ccParams.duration, 10);
+  const minNotice = Number.parseInt(ccParams.minNotice, 10);
+  const fetchAvailableSlots = async () => {
+    const slotsForRange = await getAvailableSlots(
+      startTime.toISOString(),
+      endTime.toISOString(),
+      ccParams.userName,
+      ccParams.eventTypeSlug,
+      duration,
+      ccParams.minTime,
+      ccParams.maxTime,
+      minNotice + MIN_POLL_HOURS,
+    );
+    const availableDateEntries = Object.entries(slotsForRange.slotsByDay).map(
+      ([day, slots]) => [day, [...slots].map((s) => dayjs(s))],
+    );
+    return {
+      availableSlots: slotsForRange.slotsByDay,
+      availableDjss: Object.fromEntries(availableDateEntries) as SlotDjssByDay,
+      minTime: slotsForRange.minTime,
+      maxTime: slotsForRange.maxTime,
+      earliestGoodSlot: slotsForRange.earliestGoodSlot,
+      duration,
+      minNotice,
+      step: Number.parseInt(ccParams.step, 10),
+    };
+  };
+  const slotInfo = await fetchAvailableSlots();
+
+  const isAvailableSlot = (slotTime: Date) => {
+    const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
+    const laDate = laDayjs.format("YYYY-MM-DD");
+    const utcDateAndTime = laDayjs.toISOString();
+    return slotInfo.availableSlots[laDate]?.has(utcDateAndTime);
+  };
+
+  const isWithinAvailableSlot = (slotTime: Date) => {
+    const laDayjs = dayjs(slotTime).tz("America/Los_Angeles", true);
+    const laDate = laDayjs.format("YYYY-MM-DD");
+    const slots = slotInfo.availableDjss[laDate];
+    if (slots === undefined) {
+      return false;
+    }
+    return slots.some((slot) =>
+      laDayjs.isBetween(slot, slot.add(duration, "minute"), "minute", "[)"),
+    );
+  };
+  return {
+    ...slotInfo,
+    minPollHours: MIN_POLL_HOURS,
+    isAvailableSlot,
+    isWithinAvailableSlot,
+  };
+};

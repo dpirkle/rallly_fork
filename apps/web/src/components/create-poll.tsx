@@ -10,8 +10,9 @@ import { useUnmount } from "react-use";
 import { Trans } from "@/components/trans";
 import { useUser } from "@/components/user-provider";
 import { trpc } from "@/trpc/client";
+import { searchToCalcomParams } from "@/utils/calcom";
 import type { NewEventData } from "./forms";
-import { PollOptionsForm, searchToCalcomParams } from "./forms";
+import { PollOptionsForm } from "./forms";
 
 const required = <T,>(v: T | undefined): T => {
   if (!v) {

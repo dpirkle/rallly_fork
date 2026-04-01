@@ -21,20 +21,9 @@ export interface DateTimePickerProps {
   duration: number;
   onChangeDuration: (duration: number) => void;
   scrollToTime?: Date;
-  isAvailableSlot: (localSlotTime: Date) => boolean;
-  isWithinAvailableSlot: (localSlotTime: Date) => boolean;
+  isAvailableSlot?: (localSlotTime: Date) => boolean;
+  isWithinAvailableSlot?: (localSlotTime: Date) => boolean;
   min?: Date;
   max?: Date;
   step?: number;
 }
-
-export type CalcomParams = {
-  userName: string;
-  eventTypeSlug: string;
-  minTime: string;
-  maxTime: string;
-  duration: string;
-  title: string;
-  step: string;
-  minNotice: string;
-};
