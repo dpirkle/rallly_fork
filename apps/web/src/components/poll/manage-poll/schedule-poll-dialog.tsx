@@ -31,6 +31,11 @@ import { Trans } from "@/components/trans";
 import { VoteSummaryProgressBar } from "@/components/vote-summary-progress-bar";
 import { usePoll } from "@/contexts/poll";
 import { trpc } from "@/trpc/client";
+import type { CalcomAvailability } from "@/utils/calcom";
+import {
+  fetchCalcomAvailability,
+  getCalcomParamsFromPoll,
+} from "@/utils/calcom";
 import { useDayjs } from "@/utils/dayjs";
 
 const formSchema = z.object({
@@ -89,11 +94,13 @@ export const SchedulePollForm = ({
   onSubmit,
   onSelect,
   options,
+  availability,
 }: {
   name: string;
   onSubmit?: (data: ScheduleFormData) => void;
   onSelect: (selectedDate: Date) => void;
   options: Options;
+  availability?: CalcomAvailability;
 }) => {
   const poll = usePoll();
 
@@ -144,6 +151,9 @@ export const SchedulePollForm = ({
                         !poll.timeZone,
                       );
 
+                      const isStillAvailable =
+                        availability?.isAvailableSlot(option.startTime) ?? true;
+
                       return (
                         <label
                           key={option.id}
@@ -157,11 +167,16 @@ export const SchedulePollForm = ({
                             id={option.id}
                             value={option.id}
                             onClick={() => onSelect(option.startTime)}
+                            disabled={!isStillAvailable}
                           />
                           <div className="grow">
                             <div className="flex gap-x-4">
                               <DateIcon start={option.startTime} />
-                              <div className="grow whitespace-nowrap">
+                              <div
+                                className={cn("grow whitespace-nowrap", {
+                                  "line-through": !isStillAvailable,
+                                })}
+                              >
                                 <div className="font-medium text-sm">
                                   {start.format("LL")}
                                 </div>
@@ -205,12 +220,35 @@ export const SchedulePollForm = ({
 
 export function SchedulePollDialog(props: DialogProps) {
   const poll = usePoll();
+
+  const ccParams = React.useMemo(() => getCalcomParamsFromPoll(poll), [poll]);
+  const [availability, setAvailability] = React.useState<CalcomAvailability>();
+  React.useEffect(() => {
+    if (ccParams) {
+      const fetchAndSetAvailability = async () => {
+        const ccAvailability = await fetchCalcomAvailability(ccParams);
+        setAvailability(ccAvailability);
+      };
+      fetchAndSetAvailability();
+    }
+  }, [ccParams]);
+
   const scoreByOptionId = useScoreByOptionId();
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
   const [sortedOptions, setSortedOptions] = React.useState<Options>([]);
+  const [isAllAvailable, setAllAvailable] = React.useState(true);
   useEffect(() => {
     const options = [...poll.options]
       .sort((a, b) => {
+        const isAAvailble = availability?.isAvailableSlot(a.startTime) ?? true;
+        const isBAvailble = availability?.isAvailableSlot(b.startTime) ?? true;
+        if (!isAAvailble || !isBAvailble) {
+          if (!isAAvailble && !isBAvailble) {
+            return 0;
+          } else {
+            return isBAvailble ? 1 : -1;
+          }
+        }
         const aYes = scoreByOptionId[a.id].yes.length;
         const bYes = scoreByOptionId[b.id].yes.length;
         const aIfNeedBe = scoreByOptionId[a.id].ifNeedBe.length;
@@ -234,7 +272,12 @@ export function SchedulePollDialog(props: DialogProps) {
       });
     setSelectedDate(options[0].startTime);
     setSortedOptions(options);
-  }, [poll, scoreByOptionId]);
+    setAllAvailable(
+      poll.options.every(
+        (opt) => availability?.isAvailableSlot(opt.startTime) ?? true,
+      ),
+    );
+  }, [poll, scoreByOptionId, availability]);
 
   const scheduleEvent = trpc.polls.book.useMutation();
   return (
@@ -248,7 +291,10 @@ export function SchedulePollDialog(props: DialogProps) {
             <Trans
               i18nKey="schedulePollDescription"
               defaults="Select a final date for your event."
-            />
+            />{" "}
+            {isAllAvailable
+              ? ""
+              : "Please note that some dates are no longer available."}
           </DialogDescription>
         </DialogHeader>
         <SchedulePollForm
@@ -263,6 +309,7 @@ export function SchedulePollDialog(props: DialogProps) {
           }}
           onSelect={(date) => setSelectedDate(date)}
           options={sortedOptions}
+          availability={availability}
         />
         <DialogFooter>
           <DialogClose asChild>
