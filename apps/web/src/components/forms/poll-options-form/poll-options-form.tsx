@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { useFormContext } from "react-hook-form";
+import { createBreakpoint } from "react-use";
 import { Trans } from "@/components/trans";
 import { useTranslation } from "@/i18n/client";
 import type { GetPollApiResponse } from "@/trpc/client/types";
@@ -27,6 +28,8 @@ import type { NewEventData } from "../types";
 import MonthCalendar from "./month-calendar";
 import type { DateTimeOption, TimeOption } from "./types";
 import WeekCalendar from "./week-calendar";
+
+const useDevice = createBreakpoint({ desktop: 720, mobile: 360 });
 
 export type PollOptionsData = {
   navigationDate: string; // used to navigate to the right part of the calendar
@@ -138,21 +141,19 @@ const PollOptionsForm = ({
     }
   }, [watchOptions, availability]);
 
+  const device = useDevice();
+  const action = poll ? "Save" : "Create Poll";
+  const selectTip = "Tip: select bottom-up for overlapping times.";
+  const mobileDescription = `Touch and hold to select times, drag up to scroll down to the ${action} button. ${selectTip}`;
+  const desktopDescription = `Click on the calendar to select potential times for your ${ccParams.title} adventure. ${selectTip}`;
+
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col justify-between gap-4 sm:flex-row">
           <div>
             <CardDescription>
-              <Trans
-                i18nKey="selectPotentialDates"
-                values={{
-                  title: ccParams.title,
-                  action: poll ? "Save" : "Create Poll",
-                }}
-              >
-                Select potential dates for your event
-              </Trans>
+              {device === "mobile" ? mobileDescription : desktopDescription}
             </CardDescription>
           </div>
         </div>
@@ -232,6 +233,7 @@ const PollOptionsForm = ({
                 min={availability?.minTime}
                 max={availability?.maxTime}
                 step={availability?.step}
+                device={device}
               />
               {formState.errors.options ? (
                 <div className="border-t p-3 text-center text-destructive">

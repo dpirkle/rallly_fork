@@ -7,7 +7,6 @@ import { XIcon } from "lucide-react";
 import type React from "react";
 import type { CalendarProps, SlotInfo } from "react-big-calendar";
 import { Calendar } from "react-big-calendar";
-import { createBreakpoint } from "react-use";
 import { getDuration } from "../../../utils/date-time-utils";
 import DateNavigationToolbar from "./date-navigation-toolbar";
 import dayjsLocalizer from "./dayjs-localizer";
@@ -15,8 +14,6 @@ import type { DateTimeOption, DateTimePickerProps } from "./types";
 import { formatDateWithoutTz } from "./utils";
 
 const localizer = dayjsLocalizer(dayjs);
-
-const useDevice = createBreakpoint({ desktop: 720, mobile: 360 });
 
 /**
  * Not sure what's wrong with the type definitions for react-big-calendar but it's not working properly.
@@ -36,6 +33,7 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
   min,
   max,
   step,
+  device,
 }) => {
   const scrollToTime =
     options.length > 0
@@ -44,8 +42,8 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
         : undefined
       : undefined;
 
-  const defaultView = useDevice() === "mobile" ? "day" : "week";
-  const isMobile = useDevice() === "mobile";
+  const defaultView = device === "mobile" ? "day" : "week";
+  const isMobile = device === "mobile";
 
   const handleOnSelectSlot = ({ start, end, action }: SlotInfo) => {
     // on select slot

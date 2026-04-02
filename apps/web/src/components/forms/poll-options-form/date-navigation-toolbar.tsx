@@ -2,8 +2,6 @@ import { Button } from "@rallly/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import type * as React from "react";
 
-import { useTranslation } from "@/i18n/client";
-
 export interface DateNavigationToolbarProps {
   year: number;
   label: string;
@@ -14,8 +12,7 @@ export interface DateNavigationToolbarProps {
 
 const DateNavigationToolbar: React.FunctionComponent<
   DateNavigationToolbarProps
-> = ({ year, label, onPrevious, onToday, onNext }) => {
-  const { t } = useTranslation();
+> = ({ year, label, onPrevious, onNext }) => {
   return (
     <div className="flex h-14 w-full shrink-0 items-center px-4">
       <div className="grow font-semibold tracking-tight">
@@ -29,7 +26,6 @@ const DateNavigationToolbar: React.FunctionComponent<
           <Button type="button" onClick={onPrevious}>
             <ChevronLeftIcon className="size-4" />
           </Button>
-          <Button onClick={onToday}>{t("today")}</Button>
           <Button onClick={onNext}>
             <ChevronRightIcon className="size-4" />
           </Button>

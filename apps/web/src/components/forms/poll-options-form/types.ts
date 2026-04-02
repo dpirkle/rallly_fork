@@ -26,4 +26,5 @@ export interface DateTimePickerProps {
   min?: Date;
   max?: Date;
   step?: number;
+  device?: string;
 }

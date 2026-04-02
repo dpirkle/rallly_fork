@@ -1,6 +1,4 @@
-import { Button } from "@rallly/ui/button";
 import { FileSearchIcon } from "lucide-react";
-import Link from "next/link";
 
 import { getTranslation } from "@/i18n/server";
 
@@ -20,20 +18,6 @@ export default async function Page() {
           <p className="text-muted-foreground">
             {t("errors_notFoundDescription")}
           </p>
-        </div>
-        <div className="flex justify-center space-x-3">
-          <Button variant="primary" asChild>
-            <Link href="/">{t("errors_goToHome")}</Link>
-          </Button>
-          <Button asChild>
-            <Link
-              href="https://support.rallly.co"
-              passHref={true}
-              className="btn-default"
-            >
-              {t("common_support")}
-            </Link>
-          </Button>
         </div>
       </div>
     </div>

@@ -6,7 +6,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@rallly/ui/dialog";
-import { useRouter } from "next/navigation";
 import type * as React from "react";
 
 import { Trans } from "@/components/trans";
@@ -17,11 +16,9 @@ export const DeletePollDialog: React.FunctionComponent<{
   onOpenChange: (open: boolean) => void;
   urlId: string;
 }> = ({ open, onOpenChange, urlId }) => {
-  const router = useRouter();
   const deletePoll = trpc.polls.delete.useMutation({
     onSuccess: () => {
       onOpenChange(false);
-      router.replace("/polls");
     },
   });
 

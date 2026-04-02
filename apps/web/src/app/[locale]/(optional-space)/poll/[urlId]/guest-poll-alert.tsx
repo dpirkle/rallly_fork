@@ -2,8 +2,6 @@
 import { Alert, AlertDescription, AlertTitle } from "@rallly/ui/alert";
 import { InfoIcon } from "lucide-react";
 
-import { LoginLink } from "@/components/login-link";
-import { RegisterLink } from "@/components/register-link";
 import { Trans } from "@/components/trans";
 import { useUser } from "@/components/user-provider";
 
@@ -23,22 +21,7 @@ export const GuestPollAlert = () => {
         />
       </AlertTitle>
       <AlertDescription>
-        <p className="text-sm">
-          <Trans
-            i18nKey="guestPollAlertDescription"
-            defaults="<0>Create an account</0> or <1>login</1> to claim this poll."
-            components={[
-              <RegisterLink
-                className="underline hover:text-foreground"
-                key="register"
-              />,
-              <LoginLink
-                className="underline hover:text-foreground"
-                key="login"
-              />,
-            ]}
-          />
-        </p>
+        <p className="text-sm" />
       </AlertDescription>
     </Alert>
   );
