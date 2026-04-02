@@ -1,6 +1,7 @@
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./rbc-overrides.css";
 
+import { cn } from "@rallly/ui";
 import dayjs from "dayjs";
 import { XIcon } from "lucide-react";
 import type React from "react";
@@ -142,6 +143,9 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
           eventWrapper: function EventWraper(props) {
             const start = dayjs(props.event.start);
             const end = dayjs(props.event.end);
+            const isAvailable = props.event.start
+              ? isAvailableSlot(props.event.start)
+              : true;
             return (
               // biome-ignore lint/a11y/noStaticElementInteractions: fix later
               <div
@@ -158,11 +162,19 @@ const WeekCalendar: React.FunctionComponent<DateTimePickerProps> = ({
                 <div className="absolute top-1.5 right-1.5 flex justify-end opacity-0 group-hover:opacity-100">
                   <XIcon className="size-3" />
                 </div>
-                <div>
+                <div
+                  className={cn({
+                    "line-through": !isAvailable,
+                  })}
+                >
                   <div className="font-semibold">{start.format("LT")}</div>
                   <div className="opacity-50">{getDuration(start, end)}</div>
                 </div>
-                <div>
+                <div
+                  className={cn({
+                    "line-through": !isAvailable,
+                  })}
+                >
                   <div className="opacity-50">{end.format("LT")}</div>
                 </div>
               </div>

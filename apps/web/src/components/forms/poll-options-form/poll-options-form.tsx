@@ -97,6 +97,7 @@ const PollOptionsForm = ({
   const [isTooSoon, setTooSoon] = React.useState(false);
 
   const [availability, setAvailability] = React.useState<CalcomAvailability>();
+  const [isAllAvailable, setAllAvailable] = React.useState(true);
   React.useEffect(() => {
     const fetchAndSetAvailability = async () => {
       const ccAvailability = await fetchCalcomAvailability(ccParams);
@@ -105,14 +106,26 @@ const PollOptionsForm = ({
     fetchAndSetAvailability();
   }, [ccParams]);
 
+  React.useEffect(() => {
+    setAllAvailable(
+      watchOptions.every(
+        (opt) =>
+          availability?.isAvailableSlot(new Date((opt as TimeOption).start)) ??
+          true,
+      ),
+    );
+  }, [watchOptions, availability]);
+
   const watchNavigationDate = watch("navigationDate");
-  const navigationDate = React.useMemo(
-    () =>
-      watchNavigationDate || availability?.earliestGoodSlot
-        ? new Date(watchNavigationDate ?? availability?.earliestGoodSlot)
-        : undefined,
-    [watchNavigationDate, availability],
-  );
+  const navigationDate = React.useMemo(() => {
+    if (watchNavigationDate) {
+      return new Date(watchNavigationDate);
+    } else if (availability) {
+      return new Date(availability.earliestGoodSlot);
+    } else {
+      return undefined;
+    }
+  }, [watchNavigationDate, availability]);
 
   React.useEffect(() => {
     if (availability?.earliestGoodSlot) {
@@ -231,6 +244,11 @@ const PollOptionsForm = ({
                   poll, and {availability?.minNotice} hours minimum booking
                   notice, consider selecting options at or after{" "}
                   {availability?.earliestGoodSlot.toLocaleString()}.
+                </div>
+              ) : null}
+              {!isAllAvailable ? (
+                <div className="border-t p-3 text-center text-destructive">
+                  Some times are no longer available.
                 </div>
               ) : null}
             </div>

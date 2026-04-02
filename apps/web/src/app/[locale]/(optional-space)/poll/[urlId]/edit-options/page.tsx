@@ -45,17 +45,16 @@ const Page = () => {
     router.push(pollLink);
   };
 
-  let firstDate = dayjs(poll.options[0]?.startTime);
-
-  if (poll.timeZone) {
-    firstDate = firstDate.tz(poll.timeZone);
-  } else {
-    firstDate = firstDate.utc();
-  }
+  const earliestDate =
+    poll.options.length > 0
+      ? poll.options
+          .reduce((o1, o2) => (o1.startTime < o2.startTime ? o1 : o2))
+          .startTime.toISOString()
+      : undefined;
 
   const form = useForm({
     defaultValues: {
-      navigationDate: firstDate.format("YYYY-MM-DD"),
+      navigationDate: earliestDate,
       view: "week" as const,
       options: poll.options.map((option) => {
         let start = dayjs(option.startTime);
