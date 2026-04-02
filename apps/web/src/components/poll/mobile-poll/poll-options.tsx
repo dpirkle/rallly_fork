@@ -1,21 +1,23 @@
 import type { VoteType } from "@rallly/database";
 import type * as React from "react";
 import { Controller } from "react-hook-form";
+import type { OptionsAvailable } from "@/components/poll/desktop-poll/poll-header";
 import { useVotingForm } from "@/components/poll/voting-form";
 import { usePoll } from "@/components/poll-context";
 import type { ParsedDateTimeOpton } from "@/utils/date-time-utils";
-
 import DateOption from "./date-option";
 import TimeSlotOption from "./time-slot-option";
 
 export interface PollOptions {
   options: ParsedDateTimeOpton[];
+  availabilities: OptionsAvailable;
   editable?: boolean;
   selectedParticipantId?: string;
 }
 
 const PollOptions: React.FunctionComponent<PollOptions> = ({
   options,
+  availabilities,
   editable,
   selectedParticipantId,
 }) => {
@@ -56,6 +58,7 @@ const PollOptions: React.FunctionComponent<PollOptions> = ({
                 newValue[index] = { optionId: option.optionId, type: newVote };
                 field.onChange(newValue);
               };
+              const isAvailable = availabilities[option.optionId];
 
               switch (option.type) {
                 case "timeSlot":
@@ -63,6 +66,7 @@ const PollOptions: React.FunctionComponent<PollOptions> = ({
                     <TimeSlotOption
                       onChange={handleChange}
                       optionId={option.optionId}
+                      isAvailable={isAvailable}
                       yesScore={score.yes}
                       ifNeedBeScore={score.ifNeedBe}
                       participants={participants}
@@ -79,6 +83,7 @@ const PollOptions: React.FunctionComponent<PollOptions> = ({
                     <DateOption
                       onChange={handleChange}
                       optionId={option.optionId}
+                      isAvailable
                       yesScore={score.yes}
                       ifNeedBeScore={score.ifNeedBe}
                       participants={participants}

@@ -18,20 +18,25 @@ import {
 import { MoreHorizontalIcon, PlusIcon, UsersIcon } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import * as m from "motion/react-m";
-import type * as React from "react";
+import React from "react";
 import smoothscroll from "smoothscroll-polyfill";
 
 import { TimesShownIn } from "@/components/clock";
 import { OptimizedAvatarImage } from "@/components/optimized-avatar-image";
 import { Participant, ParticipantName } from "@/components/participant";
 import { ParticipantDropdown } from "@/components/participant-dropdown";
+import type { OptionsAvailable } from "@/components/poll/desktop-poll/poll-header";
 import { useVotingForm } from "@/components/poll/voting-form";
 import { YouAvatar } from "@/components/poll/you-avatar";
 import { useOptions, usePoll } from "@/components/poll-context";
 import { Trans } from "@/components/trans";
 import { usePermissions } from "@/contexts/permissions";
 import { useTranslation } from "@/i18n/client";
-
+import type { CalcomAvailability } from "@/utils/calcom";
+import {
+  fetchCalcomAvailability,
+  getCalcomParamsFromPoll,
+} from "@/utils/calcom";
 import { useVisibleParticipants } from "../participants-provider";
 import { useUser } from "../user-provider";
 import GroupedOptions from "./mobile-poll/grouped-options";
@@ -65,15 +70,53 @@ const MobilePoll: React.FunctionComponent = () => {
 
   const isEditing = votingForm.watch("mode") !== "view";
 
+  const ccParams = React.useMemo(() => getCalcomParamsFromPoll(poll), [poll]);
+  const [availability, setAvailability] = React.useState<CalcomAvailability>();
+  const [isAllAvailable, setAllAvailable] = React.useState(true);
+  const [availabilities, setAvailabilities] = React.useState<OptionsAvailable>(
+    {},
+  );
+
+  React.useEffect(() => {
+    if (ccParams) {
+      const fetchAndSetAvailability = async () => {
+        const ccAvailability = await fetchCalcomAvailability(ccParams);
+        setAvailability(ccAvailability);
+      };
+      fetchAndSetAvailability();
+    }
+  }, [ccParams]);
+
+  React.useEffect(() => {
+    setAllAvailable(
+      poll.options.every(
+        (opt) => availability?.isAvailableSlot(opt.startTime) ?? true,
+      ),
+    );
+    setAvailabilities(
+      Object.fromEntries(
+        poll.options.map((opt) => [
+          opt.id,
+          availability?.isAvailableSlot(opt.startTime) ?? true,
+        ]),
+      ),
+    );
+  }, [poll, availability]);
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex items-center justify-between gap-x-2.5">
         <div className="flex items-center gap-x-2.5">
           <CardTitle>
             <Trans i18nKey="participants" />
           </CardTitle>
           <Badge>{visibleParticipants.length}</Badge>
         </div>
+        {!isAllAvailable ? (
+          <div className="w-full text-center text-sm italic">
+            Please note that some times are no longer available
+          </div>
+        ) : null}
       </CardHeader>
 
       <div className="flex flex-col space-y-2 border-b p-2">
@@ -185,6 +228,7 @@ const MobilePoll: React.FunctionComponent = () => {
       <GroupedOptions
         selectedParticipantId={selectedParticipantId}
         options={options}
+        availabilities={availabilities}
         editable={isEditing}
         group={(option) => {
           if (option.type === "timeSlot") {

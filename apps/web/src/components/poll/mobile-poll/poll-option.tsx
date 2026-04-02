@@ -30,6 +30,7 @@ export interface PollOptionProps {
   participants: Participant[];
   selectedParticipantId?: string;
   optionId: string;
+  isAvailable: boolean;
 }
 
 const PollOptionVoteSummary: React.FunctionComponent<{ optionId: string }> = ({
@@ -121,9 +122,10 @@ const PollOption: React.FunctionComponent<PollOptionProps> = ({
   onChange,
   editable = false,
   optionId,
+  isAvailable,
 }) => {
   const poll = usePoll();
-  const showVotes = !!(selectedParticipantId || editable);
+  const showVotes = !!(selectedParticipantId || (editable && isAvailable));
   const role = useRole();
   const selectorRef = React.useRef<HTMLButtonElement>(null);
   const [active, setActive] = React.useState(false);
@@ -132,9 +134,9 @@ const PollOption: React.FunctionComponent<PollOptionProps> = ({
     <div
       role="button"
       className={cn("space-y-4 bg-background p-4 transition-colors", {
-        "bg-accent/50": editable && active,
+        "bg-accent/50": editable && active && isAvailable,
       })}
-      onPointerDown={() => setActive(editable)}
+      onPointerDown={() => setActive(editable && isAvailable)}
       onPointerUp={() => setActive(false)}
       onPointerOut={() => setActive(false)}
       data-testid="poll-option"
@@ -147,7 +149,7 @@ const PollOption: React.FunctionComponent<PollOptionProps> = ({
         <div className="flex items-center gap-x-4">
           {role === "participant" && poll.hideParticipants ? (
             <ConnectedScoreSummary optionId={optionId} />
-          ) : (
+          ) : isAvailable ? (
             <Button
               size="sm"
               variant="ghost"
@@ -161,24 +163,24 @@ const PollOption: React.FunctionComponent<PollOptionProps> = ({
                 {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
               </Icon>
             </Button>
-          )}
+          ) : null}
 
           {showVotes ? (
             <div className="relative flex size-7 items-center justify-center">
-              {editable ? (
+              {editable && isAvailable ? (
                 <VoteSelector
                   ref={selectorRef}
                   value={vote}
                   onChange={onChange}
                 />
-              ) : (
+              ) : isAvailable ? (
                 <div
                   key={vote}
                   className="flex h-full items-center justify-center"
                 >
                   <VoteIcon type={vote} />
                 </div>
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>

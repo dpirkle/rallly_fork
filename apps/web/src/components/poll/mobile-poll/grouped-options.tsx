@@ -1,13 +1,13 @@
 import { cn } from "@rallly/ui";
 import { groupBy } from "lodash";
 import type * as React from "react";
-
+import type { OptionsAvailable } from "@/components/poll/desktop-poll/poll-header";
 import type { ParsedDateTimeOpton } from "@/utils/date-time-utils";
-
 import PollOptions from "./poll-options";
 
 export interface GroupedOptionsProps {
   options: ParsedDateTimeOpton[];
+  availabilities: OptionsAvailable;
   editable?: boolean;
   selectedParticipantId?: string;
   group: (option: ParsedDateTimeOpton) => string;
@@ -16,6 +16,7 @@ export interface GroupedOptionsProps {
 
 const GroupedOptions: React.FunctionComponent<GroupedOptionsProps> = ({
   options,
+  availabilities,
   editable,
   selectedParticipantId,
   group,
@@ -37,6 +38,7 @@ const GroupedOptions: React.FunctionComponent<GroupedOptionsProps> = ({
             </div>
             <PollOptions
               options={options}
+              availabilities={availabilities}
               editable={editable}
               selectedParticipantId={selectedParticipantId}
             />
