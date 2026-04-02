@@ -12,6 +12,7 @@ import { FormField, FormMessage } from "@rallly/ui/form";
 import dayjs from "dayjs";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
+import { isMobile } from "react-device-detect";
 import { useFormContext } from "react-hook-form";
 import { createBreakpoint } from "react-use";
 import { Trans } from "@/components/trans";
@@ -153,7 +154,7 @@ const PollOptionsForm = ({
         <div className="flex flex-col justify-between gap-4 sm:flex-row">
           <div>
             <CardDescription>
-              {device === "mobile" ? mobileDescription : desktopDescription}
+              {isMobile ? mobileDescription : desktopDescription}
             </CardDescription>
           </div>
         </div>

@@ -21,7 +21,10 @@ export const GuestPollAlert = () => {
         />
       </AlertTitle>
       <AlertDescription>
-        <p className="text-sm" />
+        <p className="text-sm">
+          Your ability to edit, schedule, and delete this poll can be lost if
+          you clear your cookies.
+        </p>
       </AlertDescription>
     </Alert>
   );

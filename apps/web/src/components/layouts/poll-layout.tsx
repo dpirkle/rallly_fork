@@ -10,7 +10,7 @@ const Layout = ({ children }: React.PropsWithChildren) => {
   return (
     <div className="h-dvh overflow-auto overscroll-none bg-gray-100 dark:bg-gray-900">
       <div className="sticky top-0 z-40 border-b bg-gray-100/90 p-3 backdrop-blur-lg sm:flex-row dark:bg-gray-900/90">
-        <div className="mx-auto flex max-w-4xl justify-between">
+        <div className="mx-auto flex max-w-4xl flex-wrap justify-between">
           <div className="flex min-w-0 items-center gap-x-2.5">
             <ManagePoll />
           </div>
