@@ -25,7 +25,8 @@
     "nodemailer": "^6.9.9",
     "react": "^19.1.4",
     "react-dom": "^19.1.4",
-    "react-i18next": "^15.5.1"
+    "react-i18next": "^15.5.1",
+    "resend": "^6.10.0"
   },
   "devDependencies": {
     "@rallly/tailwind-config": "workspace:*",

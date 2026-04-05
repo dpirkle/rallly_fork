@@ -23,19 +23,9 @@ import { useAddParticipantMutation } from "./poll/mutations";
 import VoteIcon from "./poll/vote-icon";
 import { useUser } from "./user-provider";
 
-const requiredEmailSchema = z.object({
-  requireEmail: z.literal(true),
+const schema = z.object({
   name: z.string().trim().min(1).max(100),
-  email: z.email(),
 });
-
-const optionalEmailSchema = z.object({
-  requireEmail: z.literal(false),
-  name: z.string().trim().min(1).max(100),
-  email: z.email().or(z.literal("")),
-});
-
-const schema = z.union([requiredEmailSchema, optionalEmailSchema]);
 
 interface NewParticipantModalProps {
   votes: { optionId: string; type: VoteType }[];
@@ -90,20 +80,13 @@ export const NewParticipantForm = (props: NewParticipantModalProps) => {
   const { t } = useTranslation();
   const poll = usePoll();
 
-  const isEmailRequired = poll.requireParticipantEmail;
   const { timezone } = useTimezone();
   const { user, createGuestIfNeeded } = useUser();
   const isLoggedIn = user && !user.isGuest;
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      requireEmail: isEmailRequired,
-      ...(isLoggedIn
-        ? { name: user.name, email: user.email ?? "" }
-        : {
-            name: "",
-            email: "",
-          }),
+      ...(isLoggedIn ? { name: user.name } : { name: "" }),
     },
   });
 
@@ -119,7 +102,7 @@ export const NewParticipantForm = (props: NewParticipantModalProps) => {
             const newParticipant = await addParticipant.mutateAsync({
               name: data.name,
               votes: props.votes,
-              email: data.email,
+              email: "",
               pollId: poll.id,
               timeZone: timezone,
             });
@@ -147,27 +130,6 @@ export const NewParticipantForm = (props: NewParticipantModalProps) => {
                   autoFocus={true}
                   disabled={formState.isSubmitting}
                   placeholder={t("namePlaceholder")}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                {t("email")}
-                {!isEmailRequired ? ` (${t("optional")})` : null}
-              </FormLabel>
-              <FormControl>
-                <Input
-                  className="w-full"
-                  disabled={formState.isSubmitting}
-                  placeholder={t("emailPlaceholder")}
                   {...field}
                 />
               </FormControl>

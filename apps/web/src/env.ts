@@ -31,7 +31,7 @@ export const env = createEnv({
      * Choose which service provider to use for sending emails.
      * Make sure to configure the corresponding environment variables.
      */
-    EMAIL_PROVIDER: z.enum(["smtp", "ses"]).default("smtp"),
+    EMAIL_PROVIDER: z.enum(["smtp", "ses", "resend"]).default("smtp"),
     /**
      * SMTP Configuration
      */
@@ -49,6 +49,9 @@ export const env = createEnv({
     AWS_ACCESS_KEY_ID: z.string().optional(),
     AWS_SECRET_ACCESS_KEY: z.string().optional(),
     AWS_REGION: z.string().optional(),
+
+    RESEND_HTTP_API_KEY: z.string().optional(),
+
     /**
      * Comma separated list of email addresses that are allowed to register and login.
      * If not set, all emails are allowed. Wildcard characters are supported.
@@ -174,6 +177,8 @@ export const env = createEnv({
     SMTP_SECURE: process.env.SMTP_SECURE,
     SMTP_PORT: process.env.SMTP_PORT,
     SMTP_REJECT_UNAUTHORIZED: process.env.SMTP_REJECT_UNAUTHORIZED,
+    RESEND_HTTP_API_KEY: process.env.RESEND_HTTP_API_KEY,
+    
     SMTP_TLS_ENABLED: process.env.SMTP_TLS_ENABLED,
     ALLOWED_EMAILS: process.env.ALLOWED_EMAILS,
     EMAIL_LOGIN_ENABLED: process.env.EMAIL_LOGIN_ENABLED,

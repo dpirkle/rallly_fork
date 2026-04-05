@@ -4,6 +4,7 @@ import type React from "react";
 
 import { InviteDialog } from "@/components/invite-dialog";
 import ManagePoll from "@/components/poll/manage-poll";
+import NotificationsToggle from "@/components/poll/notifications-toggle";
 import { LegacyPollContextProvider } from "@/components/poll/poll-context-provider";
 
 const Layout = ({ children }: React.PropsWithChildren) => {
@@ -12,6 +13,7 @@ const Layout = ({ children }: React.PropsWithChildren) => {
       <div className="sticky top-0 z-40 border-b bg-gray-100/90 p-3 backdrop-blur-lg sm:flex-row dark:bg-gray-900/90">
         <div className="mx-auto flex max-w-4xl flex-wrap justify-between">
           <div className="flex min-w-0 items-center gap-x-2.5">
+            <NotificationsToggle />
             <ManagePoll />
           </div>
           <div className="flex items-center gap-x-2">

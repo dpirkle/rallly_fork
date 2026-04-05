@@ -36,7 +36,7 @@
   "register_text": "Please use the following 6-digit verification code to verify your email",
   "register_codeValid": "This code is valid for 15 minutes",
   "register_subject": "Please verify your email address",
-  "common_viewOn": "View on {domain}",
+  "common_viewOn": "View Poll",
   "newComment_preview": "Go to your poll to see what they said.",
   "newComment_heading": "New Comment",
   "newPoll_preview": "Share your participant link to start collecting responses.",

@@ -63,6 +63,22 @@ export const user = router({
         },
       });
     }),
+  changeEmail: privateProcedure
+    .input(
+      z.object({
+        email: z.email(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      await prisma.user.update({
+        where: {
+          id: ctx.user.id,
+        },
+        data: {
+          email: input.email,
+        },
+      });
+    }),
   updatePreferences: privateProcedure
     .input(
       z.object({

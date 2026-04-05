@@ -5,6 +5,8 @@ import { waitUntil } from "@vercel/functions";
 import type { Transporter } from "nodemailer";
 import { createTransport } from "nodemailer";
 import type Mail from "nodemailer/lib/mailer";
+import type { CreateEmailOptions, ErrorResponse } from "resend";
+import { Resend } from "resend";
 
 import { i18nDefaultConfig, i18nInstance } from "./i18n";
 import { templates } from "./templates";
@@ -28,6 +30,10 @@ type EmailProviderConfig =
     }
   | {
       name: "smtp";
+      // config defined through env vars
+    }
+  | {
+      name: "resend";
       // config defined through env vars
     };
 
@@ -162,6 +168,9 @@ export class EmailClient {
     }
 
     switch (this.config.provider.name) {
+      case "resend": {
+        return new ResendTransport();
+      }
       case "ses": {
         const ses = new aws.SES({
           region: process.env["AWS" + "_REGION"] as string,
@@ -224,5 +233,25 @@ export class EmailClient {
     }
 
     return this.cachedTransport;
+  }
+}
+
+class ResendTransport {
+  async sendMail(mailOptions: Mail.Options) {
+    if (mailOptions.from && mailOptions.to && mailOptions.html) {
+      const resend = new Resend(process.env.RESEND_HTTP_API_KEY);
+      const resendOptions: CreateEmailOptions = {
+        from: (mailOptions.from as Mail.Address).address,
+        to: mailOptions.to as string,
+        subject: mailOptions.subject || "",
+        text: "",
+        html: mailOptions.html as string,
+      };
+      const error = (await resend.emails.send(resendOptions)).error;
+      if (error) {
+        const errMsg = `Error sending email via resend, name: ${error.name}, status code: ${error.statusCode}, message: ${error.message}`;
+        throw new Error(errMsg);
+      }
+    }
   }
 }

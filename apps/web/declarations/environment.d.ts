@@ -53,6 +53,9 @@ declare global {
        * Port number of the SMTP server
        */
       SMTP_PORT: string;
+
+      RESEND_HTTP_API_KEY: string;
+
       /**
        * Comma separated list of email addresses that are allowed to register and login.
        * If not set, all emails are allowed. Wildcard characters are supported.
@@ -63,7 +66,7 @@ declare global {
       /**
        * Determines what email provider to use. "smtp" or "ses"
        */
-      EMAIL_PROVIDER?: "smtp" | "ses";
+      EMAIL_PROVIDER?: "smtp" | "ses" | "resend";
       /**
        * Name of the oidc provider
        */
