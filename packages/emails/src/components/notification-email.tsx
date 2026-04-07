@@ -1,9 +1,8 @@
 import { Section } from "@react-email/components";
-import { Trans } from "react-i18next/TransWithoutContext";
 
 import type { EmailContext } from "../types";
 import { EmailLayout } from "./email-layout";
-import { Button, Link, Text } from "./styled-components";
+import { Button } from "./styled-components";
 
 export interface NotificationBaseProps {
   title: string;
@@ -18,7 +17,6 @@ export interface NotificationEmailProps extends NotificationBaseProps {
 
 export const NotificationEmail = ({
   pollUrl,
-  disableNotificationsUrl,
   preview,
   children,
   ctx,
@@ -36,24 +34,6 @@ export const NotificationEmail = ({
           })}
         </Button>
       </Section>
-      <Text light={true}>
-        <Trans
-          i18n={ctx.i18n}
-          t={ctx.t}
-          i18nKey="common_disableNotifications"
-          ns="emails"
-          defaults="If you would like to stop receiving updates you can <a>turn notifications off</a>."
-          components={{
-            a: (
-              <Link
-                color={ctx.primaryColor}
-                className="whitespace-nowrap"
-                href={disableNotificationsUrl}
-              />
-            ),
-          }}
-        />
-      </Text>
     </EmailLayout>
   );
 };

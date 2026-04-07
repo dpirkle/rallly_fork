@@ -21,13 +21,11 @@ import { Icon } from "@rallly/ui/icon";
 import { Input } from "@rallly/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rallly/ui/tooltip";
 import { BellOffIcon, BellRingIcon } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import type { SubmitHandler } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { useMount } from "react-use";
 import { z } from "zod";
-import { Trans } from "@/components/trans";
 import { useUser } from "@/components/user-provider";
 import { useTranslation } from "@/i18n/client";
 import { trpc } from "@/trpc/client";
@@ -36,8 +34,6 @@ import { usePoll } from "../poll-context";
 
 const NotificationsToggle: React.FunctionComponent = () => {
   const { poll } = usePoll();
-  const pathname = usePathname();
-  const router = useRouter();
 
   const { data: watchers } = trpc.polls.getWatchers.useQuery(
     {
@@ -82,8 +78,11 @@ const NotificationsToggle: React.FunctionComponent = () => {
     },
   });
 
-  const { t } = useTranslation();
   const [isEmailModalVisible, setIsEmailModalVisible] = React.useState(false);
+  const currentEmail =
+    poll.user?.email && !poll.user.email.endsWith("@rallly.co")
+      ? poll.user.email
+      : "";
 
   return user ? (
     <>
@@ -93,13 +92,6 @@ const NotificationsToggle: React.FunctionComponent = () => {
             data-testid="notifications-toggle"
             variant="ghost"
             onClick={async () => {
-              if (!user || user.isGuest) {
-                router.push(
-                  `/login?redirectTo=${encodeURIComponent(pathname)}`,
-                );
-                return;
-              }
-              // toggle
               if (isWatching) {
                 await unwatch.mutateAsync({ pollId: poll.id });
               } else {
@@ -115,24 +107,21 @@ const NotificationsToggle: React.FunctionComponent = () => {
               <Icon>
                 <BellOffIcon />
               </Icon>
-            )} Notifications
+            )}{" "}
+            Notifications
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {!user || user.isGuest ? (
-            <Trans
-              i18nKey="notificationsGuestTooltip"
-              defaults="Create an account or login to turn on notifications"
-            />
-          ) : isWatching
-                  ? `Notifying ${poll.user?.email} (click twice to change email)` : "Notifications are off"}
+          {isWatching
+            ? `Notifying ${poll.user?.email} (click twice to change email)`
+            : "Notifications are off"}
         </TooltipContent>
       </Tooltip>
       <EmailModal
         open={isEmailModalVisible}
         onOpenChange={setIsEmailModalVisible}
-        onSuccess={async() => await watch.mutateAsync({ pollId: poll.id })}
-        email={poll.user?.email}
+        onSuccess={async () => await watch.mutateAsync({ pollId: poll.id })}
+        email={currentEmail}
       />
     </>
   ) : null;
@@ -147,7 +136,7 @@ const emailSchema = z.object({
 });
 
 const EmailModal = (props: {
-  email?: string | null;
+  email: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
@@ -156,7 +145,7 @@ const EmailModal = (props: {
 
   const form = useForm({
     defaultValues: {
-      email: email || "",
+      email,
     },
     resolver: zodResolver(emailSchema),
   });
@@ -169,18 +158,19 @@ const EmailModal = (props: {
     });
   });
 
-
   const changeEmail = trpc.user.changeEmail.useMutation();
 
   const handler = React.useCallback<SubmitHandler<EmailForm>>(
-    async ({ email }) => {
-      await changeEmail.mutateAsync({
-        email,
-      });
+    async (form) => {
+      if (form.email !== email) {
+        await changeEmail.mutateAsync({
+          email: form.email,
+        });
+      }
       onOpenChange(false);
-      onSuccess()
+      onSuccess();
     },
-    [changeEmail, onOpenChange, onSuccess],
+    [changeEmail, onOpenChange, onSuccess, email],
   );
 
   const { requiredString } = useFormValidation();
@@ -190,7 +180,10 @@ const EmailModal = (props: {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Email Notifications</DialogTitle>
-          <DialogDescription>Enter an email address to notify whenever a vote is added to your poll.</DialogDescription>
+          <DialogDescription>
+            Enter an email address to notify whenever a vote is added to your
+            poll.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form id="email-notifications" onSubmit={handleSubmit(handler)}>

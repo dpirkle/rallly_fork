@@ -101,7 +101,7 @@ export const requireUserMiddleware = middleware(async ({ ctx, next }) => {
 
 export const privateProcedure = procedureWithAnalytics.use(
   async ({ ctx, next }) => {
-    if (!ctx.user || ctx.user.isGuest !== false) {
+    if (!ctx.user) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
         message: "Login is required",
