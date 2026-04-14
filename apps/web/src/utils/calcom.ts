@@ -1,7 +1,7 @@
 import { Mutex } from "async-mutex";
 import dayjs, { type Dayjs } from "dayjs";
 import type { ReadonlyURLSearchParams } from "next/navigation";
-import type { GetPollApiResponse } from "@/trpc/client/types";
+import type { CalcomParams, GetPollApiResponse } from "@/trpc/client/types";
 
 const mutex = new Mutex();
 
@@ -15,42 +15,17 @@ const fetchCache: {
   lastCalcomAvailability: null,
 };
 
-export type CalcomParams = {
-  userName: string;
-  eventTypeSlug: string;
-  minTime: string;
-  maxTime: string;
-  duration: string;
-  title: string;
-  step: string;
-  minNotice: string;
-};
-
 export type SlotDjssByDay = {
   [day: string]: Dayjs[];
 };
 
-export function searchToCalcomParams(
-  searchParams: ReadonlyURLSearchParams,
-): CalcomParams {
-  return {
-    userName: searchParams.get("userName") ?? "",
-    eventTypeSlug: searchParams.get("eventTypeSlug") ?? "",
-    minTime: searchParams.get("minTime") ?? "",
-    maxTime: searchParams.get("maxTime") ?? "",
-    duration: searchParams.get("duration") ?? "180",
-    title: searchParams.get("title") ?? "Odyssey Tabletop",
-    step: searchParams.get("step") ?? "30",
-    minNotice: searchParams.get("minNotice") ?? "48",
-  };
-}
-
-export function getCalcomParamsFromPoll(
-  poll: GetPollApiResponse,
-): CalcomParams | null {
-  return poll.description
-    ? (JSON.parse(poll.description) as CalcomParams)
-    : null;
+export function getEventTypeSlug(
+  poll: GetPollApiResponse | undefined,
+  searchParams?: ReadonlyURLSearchParams,
+): string | null | undefined {
+  return poll?.description
+    ? JSON.parse(poll.description).eventTypeSlug
+    : searchParams?.get("eventTypeSlug");
 }
 
 type SlotTime = {
@@ -175,8 +150,7 @@ export const fetchCalcomAvailability = async (
     ) {
       return fetchCache.lastCalcomAvailability;
     }
-    const duration = Number.parseInt(ccParams.duration, 10);
-    const minNotice = Number.parseInt(ccParams.minNotice, 10);
+    const { duration, minNotice, step } = ccParams;
     const fetchAvailableSlots = async () => {
       const slotsForRange = await getAvailableSlots(
         calcomUrl,
@@ -198,7 +172,7 @@ export const fetchCalcomAvailability = async (
         earliestGoodSlot: slotsForRange.earliestGoodSlot,
         duration,
         minNotice,
-        step: Number.parseInt(ccParams.step, 10),
+        step,
       };
     };
     const slotInfo = await fetchAvailableSlots();

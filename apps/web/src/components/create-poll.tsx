@@ -10,7 +10,6 @@ import { useUnmount } from "react-use";
 import { Trans } from "@/components/trans";
 import { useUser } from "@/components/user-provider";
 import { trpc } from "@/trpc/client";
-import { searchToCalcomParams } from "@/utils/calcom";
 import type { NewEventData } from "./forms";
 import { PollOptionsForm } from "./forms";
 
@@ -63,17 +62,23 @@ export const CreatePoll: React.FunctionComponent = () => {
     },
   });
 
+  const eventTypeInfo = trpc.calcom.get.useQuery({
+    eventTypeSlug: searchParams.get("eventTypeSlug") ?? "",
+  });
+
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(async (formData) => {
-          const title = required(searchParams.get("title") ?? "");
+          const title = required(eventTypeInfo.data?.title ?? "");
           await createGuestIfNeeded();
           await createPoll.mutateAsync(
             {
               title: title,
               location: formData?.location?.trim(),
-              description: JSON.stringify(searchToCalcomParams(searchParams)),
+              description: JSON.stringify({
+                eventTypeSlug: searchParams.get("eventTypeSlug"),
+              }),
               timeZone: "America/Los_Angeles",
               hideParticipants: formData?.hideParticipants,
               disableComments: formData?.disableComments,

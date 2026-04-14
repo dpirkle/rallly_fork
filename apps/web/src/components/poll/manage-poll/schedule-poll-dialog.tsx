@@ -32,10 +32,7 @@ import { VoteSummaryProgressBar } from "@/components/vote-summary-progress-bar";
 import { usePoll } from "@/contexts/poll";
 import { trpc } from "@/trpc/client";
 import type { CalcomAvailability } from "@/utils/calcom";
-import {
-  fetchCalcomAvailability,
-  getCalcomParamsFromPoll,
-} from "@/utils/calcom";
+import { fetchCalcomAvailability, getEventTypeSlug } from "@/utils/calcom";
 import { useDayjs } from "@/utils/dayjs";
 
 const formSchema = z.object({
@@ -221,7 +218,9 @@ export const SchedulePollForm = ({
 export function SchedulePollDialog(props: DialogProps) {
   const poll = usePoll();
 
-  const ccParams = React.useMemo(() => getCalcomParamsFromPoll(poll), [poll]);
+  const eventTypeSlug = getEventTypeSlug(poll);
+  const eventTypeInfo = trpc.calcom.get.useQuery({ eventTypeSlug });
+  const ccParams = React.useMemo(() => eventTypeInfo.data, [eventTypeInfo]);
   const [availability, setAvailability] = React.useState<CalcomAvailability>();
   React.useEffect(() => {
     if (ccParams) {

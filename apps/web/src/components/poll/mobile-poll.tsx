@@ -32,11 +32,9 @@ import { useOptions, usePoll } from "@/components/poll-context";
 import { Trans } from "@/components/trans";
 import { usePermissions } from "@/contexts/permissions";
 import { useTranslation } from "@/i18n/client";
+import { trpc } from "@/trpc/client";
 import type { CalcomAvailability } from "@/utils/calcom";
-import {
-  fetchCalcomAvailability,
-  getCalcomParamsFromPoll,
-} from "@/utils/calcom";
+import { fetchCalcomAvailability, getEventTypeSlug } from "@/utils/calcom";
 import { useVisibleParticipants } from "../participants-provider";
 import { useUser } from "../user-provider";
 import GroupedOptions from "./mobile-poll/grouped-options";
@@ -70,7 +68,9 @@ const MobilePoll: React.FunctionComponent = () => {
 
   const isEditing = votingForm.watch("mode") !== "view";
 
-  const ccParams = React.useMemo(() => getCalcomParamsFromPoll(poll), [poll]);
+  const eventTypeSlug = getEventTypeSlug(poll);
+  const eventTypeInfo = trpc.calcom.get.useQuery({ eventTypeSlug });
+  const ccParams = React.useMemo(() => eventTypeInfo.data, [eventTypeInfo]);
   const [availability, setAvailability] = React.useState<CalcomAvailability>();
   const [isAllAvailable, setAllAvailable] = React.useState(true);
   const [availabilities, setAvailabilities] = React.useState<OptionsAvailable>(

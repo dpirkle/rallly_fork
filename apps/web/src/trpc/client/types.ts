@@ -25,3 +25,14 @@ export type Vote = {
   optionId: string;
   type: VoteType;
 };
+
+export type CalcomParams = {
+  userName: string;
+  eventTypeSlug: string;
+  minTime: string;
+  maxTime: string;
+  duration: number;
+  title: string;
+  step: number;
+  minNotice: number;
+};

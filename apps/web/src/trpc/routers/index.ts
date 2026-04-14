@@ -2,10 +2,10 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import toArray from "dayjs/plugin/toArray";
 import utc from "dayjs/plugin/utc";
-
 import { mergeRouters, router } from "../trpc";
 import { apiKeys } from "./api-keys";
 import { auth } from "./auth";
+import { calcom } from "./calcom";
 import { calendars } from "./calendars";
 import { events } from "./events";
 import { polls } from "./polls";
@@ -23,6 +23,7 @@ export const appRouter = mergeRouters(
     polls,
     user,
     calendars,
+    calcom,
   }),
 );
 

@@ -28,11 +28,9 @@ import { Trans } from "@/components/trans";
 import { usePermissions } from "@/contexts/permissions";
 import { usePoll } from "@/contexts/poll";
 import { useTranslation } from "@/i18n/client";
+import { trpc } from "@/trpc/client";
 import type { CalcomAvailability } from "@/utils/calcom";
-import {
-  fetchCalcomAvailability,
-  getCalcomParamsFromPoll,
-} from "@/utils/calcom";
+import { fetchCalcomAvailability, getEventTypeSlug } from "@/utils/calcom";
 import {
   useParticipants,
   useVisibleParticipants,
@@ -98,7 +96,9 @@ const DesktopPoll: React.FunctionComponent = () => {
 
   const [didScroll, setDidScroll] = React.useState(false);
 
-  const ccParams = React.useMemo(() => getCalcomParamsFromPoll(poll), [poll]);
+  const eventTypeSlug = getEventTypeSlug(poll);
+  const eventTypeInfo = trpc.calcom.get.useQuery({ eventTypeSlug });
+  const ccParams = React.useMemo(() => eventTypeInfo.data, [eventTypeInfo]);
   const [availability, setAvailability] = React.useState<CalcomAvailability>();
   const [isAllAvailable, setAllAvailable] = React.useState(true);
   const [availabilities, setAvailabilities] = React.useState<OptionsAvailable>(

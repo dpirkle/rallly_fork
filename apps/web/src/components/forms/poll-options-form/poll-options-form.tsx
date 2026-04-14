@@ -17,13 +17,10 @@ import { useFormContext } from "react-hook-form";
 import { createBreakpoint } from "react-use";
 import { Trans } from "@/components/trans";
 import { useTranslation } from "@/i18n/client";
+import { trpc } from "@/trpc/client";
 import type { GetPollApiResponse } from "@/trpc/client/types";
 import type { CalcomAvailability } from "@/utils/calcom";
-import {
-  fetchCalcomAvailability,
-  getCalcomParamsFromPoll,
-  searchToCalcomParams,
-} from "@/utils/calcom";
+import { fetchCalcomAvailability, getEventTypeSlug } from "@/utils/calcom";
 import { getBrowserTimeZone } from "../../../utils/date-time-utils";
 import type { NewEventData } from "../types";
 import MonthCalendar from "./month-calendar";
@@ -91,24 +88,23 @@ const PollOptionsForm = ({
     }
   }, [watchOptions, dateOrTimeRangeDialog]);
 
-  const searchParams = useSearchParams();
-  const ccParams = React.useMemo(() => {
-    return (
-      (poll && getCalcomParamsFromPoll(poll)) ??
-      searchToCalcomParams(searchParams)
-    );
-  }, [searchParams, poll]);
+  const eventTypeSlug = getEventTypeSlug(poll, useSearchParams());
+  const eventTypeInfo = trpc.calcom.get.useQuery({ eventTypeSlug });
   const [isTooSoon, setTooSoon] = React.useState(false);
 
   const [availability, setAvailability] = React.useState<CalcomAvailability>();
   const [isAllAvailable, setAllAvailable] = React.useState(true);
   React.useEffect(() => {
     const fetchAndSetAvailability = async () => {
-      const ccAvailability = await fetchCalcomAvailability(ccParams);
-      setAvailability(ccAvailability);
+      if (eventTypeInfo?.data) {
+        const ccAvailability = await fetchCalcomAvailability(
+          eventTypeInfo.data,
+        );
+        setAvailability(ccAvailability);
+      }
     };
     fetchAndSetAvailability();
-  }, [ccParams]);
+  }, [eventTypeInfo]);
 
   React.useEffect(() => {
     setAllAvailable(
@@ -146,7 +142,7 @@ const PollOptionsForm = ({
   const action = poll ? "Save" : "Create Poll";
   const selectTip = "Tip: select bottom-up for overlapping times.";
   const mobileDescription = `Touch and hold to select times, drag up to scroll down to the ${action} button. ${selectTip}`;
-  const desktopDescription = `Click on the calendar to select potential times for your ${ccParams.title} adventure. ${selectTip}`;
+  const desktopDescription = `Click on the calendar to select potential times for your adventure. ${selectTip}`;
 
   return (
     <Card>
