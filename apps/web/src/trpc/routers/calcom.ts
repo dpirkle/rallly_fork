@@ -3,7 +3,7 @@ import z from "zod";
 import type { CalcomParams } from "@/trpc/client/types";
 import { publicProcedure, router } from "../trpc";
 
-const sql = postgres("postgresql://postgres:@localhost:5450/calendso");
+const sql = postgres(process.env.CALCOM_DATABASE_URL)
 
 export const calcom = router({
   get: publicProcedure

@@ -56,6 +56,8 @@ declare global {
 
       RESEND_HTTP_API_KEY: string;
 
+      CALCOM_DATABASE_URL: string;
+
       /**
        * Comma separated list of email addresses that are allowed to register and login.
        * If not set, all emails are allowed. Wildcard characters are supported.

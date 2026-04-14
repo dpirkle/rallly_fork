@@ -51,6 +51,7 @@ export const env = createEnv({
     AWS_REGION: z.string().optional(),
 
     RESEND_HTTP_API_KEY: z.string().optional(),
+    CALCOM_DATABASE_URL: z.url(),
 
     /**
      * Comma separated list of email addresses that are allowed to register and login.
@@ -178,7 +179,8 @@ export const env = createEnv({
     SMTP_PORT: process.env.SMTP_PORT,
     SMTP_REJECT_UNAUTHORIZED: process.env.SMTP_REJECT_UNAUTHORIZED,
     RESEND_HTTP_API_KEY: process.env.RESEND_HTTP_API_KEY,
-    
+    CALCOM_DATABASE_URL: process.env.CALCOM_DATABASE_URL,
+
     SMTP_TLS_ENABLED: process.env.SMTP_TLS_ENABLED,
     ALLOWED_EMAILS: process.env.ALLOWED_EMAILS,
     EMAIL_LOGIN_ENABLED: process.env.EMAIL_LOGIN_ENABLED,
