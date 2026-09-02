@@ -6,6 +6,10 @@ You can change the version of Node to persist to future shell sessions by doing 
 
 It picks up env variables from `.env.local` which has to be in the `apps/web` directory!
 
+If the web page is blank when you access the application, check to see that the port in `.env.local` is set correctly,
+especially if you're running cal.com at the same time. Specfically, the port as it appears for `NEXT_PUBLIC_BASE_URL`
+and `AUTH_URL`. Also check that the port is correct for `NEXT_PUBLIC_CALCOM_URL`,
+
 ## Debugging
 
 Use the `Launch via pnpm dev" option in vscode Run and Debug tab.
