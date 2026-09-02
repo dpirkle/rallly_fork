@@ -76,9 +76,7 @@ export const CreatePoll: React.FunctionComponent = () => {
             {
               title: title,
               location: formData?.location?.trim(),
-              description: JSON.stringify({
-                eventTypeSlug: searchParams.get("eventTypeSlug"),
-              }),
+              description: JSON.stringify(eventTypeInfo.data ?? {}),
               timeZone: "America/Los_Angeles",
               hideParticipants: formData?.hideParticipants,
               disableComments: formData?.disableComments,
