@@ -1,0 +1,9 @@
+version: 2
+updates:
+  # Even for pnpm, package-ecosystem remains "npm"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Optional: restricts updates to your specific branch
+    target-branch: "cal_com_integration" 
