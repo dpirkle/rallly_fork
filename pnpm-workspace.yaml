@@ -2,5 +2,24 @@ packages:
   - apps/*
   - packages/*
 
+allowBuilds:
+  '@prisma/engines': false
+  '@scarf/scarf': false
+  '@sentry/cli': false
+  core-js: false
+  esbuild: false
+  keytar: false
+  prisma: false
+  protobufjs: false
+  puppeteer: false
+  sharp: false
+
 onlyBuiltDependencies:
   - '@prisma/client'
+
+overrides:
+  "form-data": "^4.0.4"
+  "protobufjs": "^7.5.5"
+  "@auth/core": "^0.41.3"
+  "next-auth": "^5.0.0-beta.32"
+
