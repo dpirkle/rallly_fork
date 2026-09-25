@@ -1,13 +1,13 @@
 # Base stage with Node.js 24 and Corepack enabled
 FROM node:24 AS base
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PATH="$PNPM_HOME/bin:$PNPM_HOME:$PATH"
 RUN corepack enable
 
 # Slim base stage with Node.js 24 and Corepack enabled
 FROM node:24-slim AS base-slim
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PATH="$PNPM_HOME/bin:$PNPM_HOME:$PATH"
 RUN corepack enable
 
 # --- Builder Stage ---
@@ -38,6 +38,8 @@ ARG SELF_HOSTED
 ENV NEXT_PUBLIC_SELF_HOSTED=true
 ENV NODE_OPTIONS="--max-old-space-size=12288"
 
+ARG NEXT_PUBLIC_CALCOM_URL
+ENV NEXT_PUBLIC_CALCOM_URL=$NEXT_PUBLIC_CALCOM_URL
 
 RUN SKIP_ENV_VALIDATION=1 NODE_OPTIONS="--max-old-space-size=12288" pnpm build
 
@@ -80,6 +82,16 @@ COPY --from=installer /app/apps/web/package.json .
 COPY --chown=nextjs:nodejs --from=installer /app/apps/web/.next/standalone ./
 COPY --chown=nextjs:nodejs --from=installer /app/apps/web/.next/static ./apps/web/.next/static
 COPY --chown=nextjs:nodejs --from=installer /app/apps/web/public ./apps/web/public
+
+# Copy the Prisma CLI binary and package from the installer stage
+COPY --from=installer /app/node_modules/prisma ./node_modules/prisma
+COPY --from=installer /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+# If dotenv is needed by prisma.config.ts:
+COPY --from=installer /app/node_modules/dotenv ./node_modules/dotenv
+
+# Also copy the pnpm virtual store so pnpm symlinks resolve properly:
+COPY --from=installer /app/node_modules/.pnpm ./node_modules/.pnpm
 
 # Fix ownership of global pnpm dir - Prisma needs write access to its engines
 # and cache directories within the pnpm global store at runtime

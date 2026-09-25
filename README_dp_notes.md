@@ -16,31 +16,18 @@ Use the `Launch via pnpm dev" option in vscode Run and Debug tab.
 
 ## Docker build for Railway:
 
-Do this before the build:
-
-```
-cp .env.docker.build apps/web/.env.local
-```
-
-And this after:
-
-```
-cp .env.local apps/web
-```
-
-This is needed in order to have the right base URL for the Railway deploy available at build time.
+Before the build, make sure that NEXT_PUBLIC_CALCOM_URL is defined correctly in the .env file. This is needed in order to
+have the right base URL for contacting Cal.com available at build time, for client-side code.
 
 To build a new image:
 
 ```
-cp .env.docker.build apps/web/.env.local
 docker compose build rallly_selfhosted
 docker image tag rallly_fork-rallly_selfhosted dpirkle/rallly_fork-rallly_selfhosted:latest
 docker push dpirkle/rallly_fork-rallly_selfhosted:latest
-cp .env.local apps/web
 ```
 
-Then go to Railway to redeploy the app.
+Then redeploy the app.
 
 ## Creating an account
 

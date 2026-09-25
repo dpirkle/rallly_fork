@@ -19,6 +19,7 @@ services:
     build:
       args:
         - SELF_HOSTED=false
+        - NEXT_PUBLIC_CALCOM_URL=${NEXT_PUBLIC_CALCOM_URL}
       context: .
       dockerfile: ./apps/web/Dockerfile
     restart: always
@@ -29,6 +30,7 @@ services:
       - 3000:3000
     environment:
       - DATABASE_URL=postgres://postgres:postgres@rallly_db/rallly
+      - NEXT_PUBLIC_CALCOM_URL=${NEXT_PUBLIC_CALCOM_URL}
     env_file:
       - .env
 
